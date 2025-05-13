@@ -9,6 +9,8 @@ echo "🚀 Starting Sepolia Node Systemd Setup..."
 CURRENT_USER=$(whoami)
 NODE_DIR="$HOME/sepolia-node"
 LOCAL_BIN="$HOME/.local/bin"
+GETH_BIN=$(command -v geth || echo "/usr/bin/geth")
+PRYSM_BIN="$LOCAL_BIN/prysm"
 
 # Create directory structure
 echo "📁 Creating directory structure..."
@@ -16,54 +18,35 @@ mkdir -p "$NODE_DIR/geth"
 mkdir -p "$NODE_DIR/prysm"
 mkdir -p "$LOCAL_BIN"
 
-# Calculate optimal cache size based on available memory (in MB)
+# Calculate optimal cache size
 TOTAL_MEM=$(free -m | awk '/^Mem:/{print $2}')
-CACHE_SIZE=$((TOTAL_MEM / 4))  # Use 25% of total memory for cache
-if [ $CACHE_SIZE -gt 4096 ]; then
-    CACHE_SIZE=4096  # Cap at 4GB
-fi
+CACHE_SIZE=$((TOTAL_MEM / 4))
+[ $CACHE_SIZE -gt 4096 ] && CACHE_SIZE=4096
 
-# Calculate optimal number of peers based on CPU cores
+# Calculate peer count
 CPU_CORES=$(nproc)
-PEER_COUNT=$((CPU_CORES * 2))  # 2 peers per core
-if [ $PEER_COUNT -gt 50 ]; then
-    PEER_COUNT=50  # Cap at 50 peers
-fi
+PEER_COUNT=$((CPU_CORES * 2))
+[ $PEER_COUNT -gt 50 ] && PEER_COUNT=50
 
-# Install Geth (requires sudo)
-echo "📦 Installing Geth..."
+# Install Geth
 if ! command -v geth &> /dev/null; then
-    echo "⚠️  Geth not found. Installing..."
-    sudo add-apt-repository -y ppa:ethereum/ethereum
-    sudo apt-get update
-    sudo apt-get install -y ethereum
+  echo "⚠️  Geth not found. Installing..."
+  sudo add-apt-repository -y ppa:ethereum/ethereum
+  sudo apt-get update
+  sudo apt-get install -y ethereum
 else
-    echo "✅ Geth already installed"
+  echo "✅ Geth already installed"
 fi
 
-# Install Prysm (no sudo needed)
-echo "📦 Installing Prysm..."
-if ! command -v prysm &> /dev/null; then
-    echo "⚠️  Prysm not found. Installing..."
-    # Ensure .local/bin exists and is in PATH
-    if [[ ":$PATH:" != *":$LOCAL_BIN:"* ]]; then
-        echo 'export PATH="$LOCAL_BIN:$PATH"' >> "$HOME/.bashrc"
-        export PATH="$LOCAL_BIN:$PATH"
-    fi
-    
-    # Download Prysm
-    curl -L https://raw.githubusercontent.com/prysmaticlabs/prysm/master/prysm.sh --output "$LOCAL_BIN/prysm"
-    chmod +x "$LOCAL_BIN/prysm"
-    
-    # Verify installation
-    if [ -f "$LOCAL_BIN/prysm" ]; then
-        echo "✅ Prysm installed successfully"
-    else
-        echo "❌ Failed to install Prysm"
-        exit 1
-    fi
+# Install Prysm
+if [ ! -f "$PRYSM_BIN" ]; then
+  echo "⚠️  Prysm not found. Installing..."
+  export PATH="$LOCAL_BIN:$PATH"
+  echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
+  curl -L https://raw.githubusercontent.com/prysmaticlabs/prysm/master/prysm.sh --output "$PRYSM_BIN"
+  chmod +x "$PRYSM_BIN"
 else
-    echo "✅ Prysm already installed"
+  echo "✅ Prysm already installed"
 fi
 
 # Generate JWT secret
@@ -71,9 +54,8 @@ echo "🔑 Generating JWT secret..."
 openssl rand -hex 32 > "$NODE_DIR/jwt.hex"
 chmod 600 "$NODE_DIR/jwt.hex"
 
-# Create Geth service file with optimized parameters
-echo "📝 Creating Geth service file..."
-cat > "$NODE_DIR/sepolia-geth.service" << EOF
+# Create Geth systemd service
+cat > "$NODE_DIR/sepolia-geth.service" <<EOF
 [Unit]
 Description=Sepolia Geth Node
 After=network.target
@@ -82,12 +64,15 @@ After=network.target
 Type=simple
 User=$CURRENT_USER
 WorkingDirectory=$NODE_DIR
-ExecStart=/usr/bin/geth --sepolia \\
-    --http --http.addr 0.0.0.0 --http.port 8545 \\
-    --http.api eth,net,engine,debug,txpool,web3 \\
-    --authrpc.addr 0.0.0.0 --authrpc.port 8551 --authrpc.vhosts "*" \\
-    --datadir $NODE_DIR/geth
-ExecStop=/usr/bin/pkill geth
+ExecStart=$GETH_BIN --sepolia \\
+  --http --http.addr 0.0.0.0 --http.port 8545 \\
+  --http.api eth,net,engine,debug,txpool,web3 \\
+  --authrpc.addr 0.0.0.0 --authrpc.port 8551 --authrpc.vhosts "*" \\
+  --authrpc.jwtsecret=$NODE_DIR/jwt.hex \\
+  --datadir $NODE_DIR/geth \\
+  --syncmode snap \\
+  --cache $CACHE_SIZE \\
+  --metrics --pprof --pprof.addr 0.0.0.0 --pprof.port 6060
 Restart=always
 RestartSec=10
 
@@ -95,24 +80,26 @@ RestartSec=10
 WantedBy=multi-user.target
 EOF
 
-# Create Prysm service file with optimized parameters
-echo "📝 Creating Prysm service file..."
-cat > "$NODE_DIR/sepolia-prysm.service" << EOF
+# Create Prysm systemd service
+cat > "$NODE_DIR/sepolia-prysm.service" <<EOF
 [Unit]
 Description=Sepolia Prysm Beacon Node
-After=network.target
+After=network.target sepolia-geth.service
+Requires=sepolia-geth.service
 
 [Service]
 Type=simple
 User=$CURRENT_USER
 WorkingDirectory=$NODE_DIR
-ExecStart=$HOME/.local/bin/prysm beacon-chain \\
-    --sepolia \\
-    --datadir=$NODE_DIR/prysm \\
-    --execution-endpoint=http://localhost:8551 \\
-    --jwt-secret=$NODE_DIR/jwt.hex \\
-    --checkpoint-sync-url=https://sync-sepolia.beaconcha.in
-ExecStop=/usr/bin/pkill beacon-chain
+ExecStart=$PRYSM_BIN beacon-chain \\
+  --sepolia \\
+  --datadir=$NODE_DIR/prysm \\
+  --execution-endpoint=http://localhost:8551 \\
+  --jwt-secret=$NODE_DIR/jwt.hex \\
+  --genesis-beacon-api-url=https://lodestar-sepolia.chainsafe.io \\
+  --checkpoint-sync-url=https://sepolia.checkpoint-sync.ethpandaops.io \\
+  --accept-terms-of-use \\
+  --suggested-fee-recipient=0x0000000000000000000000000000000000000000
 Restart=always
 RestartSec=10
 
@@ -120,42 +107,27 @@ RestartSec=10
 WantedBy=multi-user.target
 EOF
 
-# Copy service files to systemd directory (requires sudo)
-echo "📝 Installing service files..."
+# Copy service files
 sudo cp "$NODE_DIR/sepolia-geth.service" /etc/systemd/system/
 sudo cp "$NODE_DIR/sepolia-prysm.service" /etc/systemd/system/
 
-# Reload systemd and enable services (requires sudo)
-echo "🔄 Enabling services..."
+# Reload systemd
+sudo systemctl daemon-reexec
 sudo systemctl daemon-reload
 sudo systemctl enable sepolia-geth
 sudo systemctl enable sepolia-prysm
 
-# Start services automatically
+# Start services
 echo "🚀 Starting services..."
 sudo systemctl start sepolia-geth
+sleep 10
 sudo systemctl start sepolia-prysm
 
-# Wait a moment for services to start
-echo "⏳ Waiting for services to start..."
-sleep 5
-
-# Check service status
-echo "📊 Checking service status..."
-echo "Geth status:"
+# Status
+echo "📊 Checking status..."
 sudo systemctl status sepolia-geth --no-pager
-echo ""
-echo "Prysm status:"
 sudo systemctl status sepolia-prysm --no-pager
 
-echo "✅ Setup complete! Services are now running."
-echo ""
-echo "📊 Monitoring endpoints:"
-echo "- Geth metrics: http://localhost:6060/debug/metrics"
-echo "- Prysm metrics: http://localhost:8080/metrics"
-echo ""
-echo "📝 To check logs:"
+echo "✅ Setup complete! Use journalctl to monitor logs."
 echo "sudo journalctl -u sepolia-geth -f"
 echo "sudo journalctl -u sepolia-prysm -f"
-echo ""
-echo "Note: Only systemd operations require sudo. All other operations are done as your user." 
