@@ -96,6 +96,9 @@ sudo apt-get install -y ethereum
 curl https://raw.githubusercontent.com/prysmaticlabs/prysm/master/prysm.sh --output prysm.sh
 chmod +x prysm.sh
 sudo mv prysm.sh /usr/local/bin/prysm
+
+# Verify installation
+prysm --version
 ```
 
 ### 2. Create systemd service files
@@ -115,7 +118,22 @@ After=network.target
 Type=simple
 User=$USER
 WorkingDirectory=/home/$USER/sepolia-node
-ExecStart=/usr/bin/geth --sepolia --http --http.addr 0.0.0.0 --http.port 8545 --http.api eth,net,engine,debug --authrpc.addr 0.0.0.0 --authrpc.port 8551 --authrpc.vhosts "*" --datadir /home/$USER/sepolia-node/geth
+ExecStart=/usr/bin/geth --sepolia \
+  --http \
+  --http.addr 0.0.0.0 \
+  --http.port 8545 \
+  --http.api eth,net,engine,debug \
+  --http.corsdomain "*" \
+  --authrpc.addr 0.0.0.0 \
+  --authrpc.port 8551 \
+  --authrpc.vhosts "*" \
+  --datadir /home/$USER/sepolia-node/geth \
+  --cache 4096 \
+  --maxpeers 50 \
+  --syncmode snap \
+  --metrics \
+  --metrics.addr 0.0.0.0 \
+  --metrics.port 6060
 ExecStop=/usr/bin/pkill geth
 Restart=always
 RestartSec=10
@@ -139,8 +157,8 @@ After=network.target
 Type=simple
 User=$USER
 WorkingDirectory=/home/$USER/sepolia-node
-ExecStart=/usr/local/bin/prysm beacon --sepolia --datadir=/home/$USER/sepolia-node/prysm --http-web3provider=http://localhost:8551 --jwt-secret=/home/$USER/sepolia-node/jwt.hex
-ExecStop=/usr/bin/pkill beacon
+ExecStart=/usr/local/bin/prysm beacon-chain --sepolia --datadir=/home/$USER/sepolia-node/prysm --execution-endpoint=http://localhost:8551 --jwt-secret=/home/$USER/sepolia-node/jwt.hex
+ExecStop=/usr/bin/pkill beacon-chain
 Restart=always
 RestartSec=10
 
