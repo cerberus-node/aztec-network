@@ -328,6 +328,28 @@ Note:
 
 ---
 
+## 🔐 (Optional) Open Firewall Ports
+
+If you use `ufw` or another firewall, run:
+
+```bash
+sudo ufw allow 8545/tcp    # Geth JSON-RPC
+sudo ufw allow 8551/tcp    # Engine API
+sudo ufw allow 30303/tcp   # Geth P2P TCP
+sudo ufw allow 30303/udp   # Geth P2P UDP
+
+sudo ufw allow 5052/tcp    # Beacon API
+sudo ufw allow 9000/tcp    # Lighthouse P2P TCP
+sudo ufw allow 9000/udp    # Lighthouse P2P UDP
+
+sudo ufw reload
+```
+
+Once opened, you can access RPC or Beacon API from other machines via:
+- Geth RPC: `http://<your-ip>:8545`
+- Beacon API: `http://<your-ip>:5052`
+
+---
 ## 🗑️ Remove Node
 ```bash
 cd ~/sepolia-node
