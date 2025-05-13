@@ -1,13 +1,23 @@
 #!/bin/bash
 
-# 🚀 Auto Setup Sepolia Geth + Lighthouse for Sequencer
-# Assumes system has at least 1TB SSD, 16GB RAM
+# 🚀 Auto Setup Sepolia Geth + Beacon (Prysm or Lighthouse) for Aztec Sequencer
+# Assumes system has at least 1TB NVMe, 16GB RAM
 
 set -e
 
-# === DEPENDENCY CHECK & INSTALL IF MISSING ===
-echo ">>> Checking required dependencies..."
+# === CHOOSE BEACON CLIENT ===
+echo ">>> Choose beacon client to use:"
+echo "1) Prysm"
+echo "2) Lighthouse"
+read -rp "Enter choice [1 or 2]: " BEACON_CHOICE
 
+if [[ "$BEACON_CHOICE" != "1" && "$BEACON_CHOICE" != "2" ]]; then
+  echo "❌ Invalid choice. Exiting."
+  exit 1
+fi
+
+# === DEPENDENCY CHECK ===
+echo ">>> Checking required dependencies..."
 install_if_missing() {
   local cmd="$1"
   local pkg="$2"
@@ -21,7 +31,7 @@ install_if_missing() {
   fi
 }
 
-# Special case: Docker
+# Docker check
 if ! command -v docker &> /dev/null || ! command -v docker compose &> /dev/null; then
   echo "⛔ Docker or Docker Compose not found. Installing Docker..."
 
@@ -46,29 +56,33 @@ else
   echo "✅ Docker and Docker Compose are already installed."
 fi
 
-# Install other common dependencies
 install_if_missing curl curl
 install_if_missing openssl openssl
+install_if_missing jq jq
 
 # === CONFIG ===
 DATA_DIR="$HOME/sepolia-node"
 GETH_DIR="$DATA_DIR/geth"
-LIGHTHOUSE_DIR="$DATA_DIR/lighthouse"
 JWT_FILE="$DATA_DIR/jwt.hex"
 COMPOSE_FILE="$DATA_DIR/docker-compose.yml"
+mkdir -p "$GETH_DIR"
 
-# === STEP 1: PREPARE FOLDERS ===
-echo ">>> Creating data directories..."
-mkdir -p "$GETH_DIR" "$LIGHTHOUSE_DIR"
+if [ "$BEACON_CHOICE" = "1" ]; then
+  BEACON="prysm"
+  BEACON_VOLUME="$DATA_DIR/prysm"
+else
+  BEACON="lighthouse"
+  BEACON_VOLUME="$DATA_DIR/lighthouse"
+fi
+mkdir -p "$BEACON_VOLUME"
 
-# === STEP 2: GENERATE JWT SECRET ===
+# === GENERATE JWT SECRET ===
 echo ">>> Generating JWT secret..."
 openssl rand -hex 32 > "$JWT_FILE"
 
-# === STEP 3: WRITE docker-compose.yml ===
+# === WRITE docker-compose.yml ===
 echo ">>> Writing docker-compose.yml..."
 cat > "$COMPOSE_FILE" <<EOF
-version: '3.8'
 services:
   geth:
     image: ethereum/client-go:stable
@@ -88,41 +102,70 @@ services:
       --authrpc.jwtsecret /root/jwt.hex
       --authrpc.vhosts=*
       --http.corsdomain="*"
+      --syncmode=snap
+      --cache=8192
+EOF
+
+if [ "$BEACON" = "prysm" ]; then
+  cat >> "$COMPOSE_FILE" <<EOF
+
+  prysm:
+    image: gcr.io/prysmaticlabs/prysm/beacon-chain:stable
+    container_name: prysm
+    restart: unless-stopped
+    volumes:
+      - $BEACON_VOLUME:/data
+      - $JWT_FILE:/data/jwt.hex
+    depends_on:
+      - geth
+    ports:
+      - "4000:4000"
+      - "3500:3500"
+    command: >
+      --datadir=/data
+      --sepolia
+      --execution-endpoint=http://geth:8551
+      --jwt-secret=/data/jwt.hex
+      --genesis-beacon-api-url=https://lodestar-sepolia.chainsafe.io
+      --checkpoint-sync-url=https://sepolia.checkpoint-sync.ethpandaops.io
+      --accept-terms-of-use
+      --rpc-host=0.0.0.0 --rpc-port=4000
+      --grpc-gateway-host=0.0.0.0 --grpc-gateway-port=3500
+EOF
+else
+  cat >> "$COMPOSE_FILE" <<EOF
 
   lighthouse:
     image: sigp/lighthouse:latest
     container_name: lighthouse
     restart: unless-stopped
     volumes:
-      - $LIGHTHOUSE_DIR:/root/.lighthouse
+      - $BEACON_VOLUME:/root/.lighthouse
       - $JWT_FILE:/root/jwt.hex
-    ports:
-      - "5052:5052"
     depends_on:
       - geth
+    ports:
+      - "5052:5052"
+      - "9000:9000/tcp"
+      - "9000:9000/udp"
     command: >
       lighthouse bn
       --network sepolia
       --execution-endpoint http://geth:8551
       --execution-jwt /root/jwt.hex
-      --checkpoint-sync-url https://sepolia.checkpoint-sync.ethpandaops.io
+      --checkpoint-sync-url=https://sepolia.checkpoint-sync.ethpandaops.io
       --http
       --http-address 0.0.0.0
 EOF
-
-# === STEP 4: START SERVICES ===
-echo ">>> Checking port 8545..."
-if lsof -i :8545 >/dev/null 2>&1; then
-  echo "❌ Port 8545 is already in use. Please stop the process using it before running this script."
-  exit 1
 fi
 
-echo ">>> Starting Sepolia node with Docker Compose..."
+# === START DOCKER ===
+echo ">>> Starting Sepolia node with $BEACON..."
 cd "$DATA_DIR"
 docker compose up -d
 
-echo ">>> ✅ Setup complete. Use the following commands to check status:"
+echo "\n>>> ✅ Setup complete. Use the following commands to check status:"
 echo "  docker logs -f geth"
-echo "  docker logs -f lighthouse"
-echo "  curl -s -X POST http://localhost:8545 -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"eth_syncing\",\"params\":[],\"id\":1}'"
-echo "  curl http://localhost:5052/eth/v1/node/health"
+echo "  docker logs -f $BEACON"
+echo "  curl -s http://localhost:8545 -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"eth_syncing\",\"params\":[],\"id\":1}' | jq"
+echo "  curl -s http://localhost:5052/eth/v1/node/health | jq"
