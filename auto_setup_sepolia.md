@@ -80,7 +80,7 @@ curl -s http://localhost:5052/eth/v1/node/syncing | jq
 
 For Prysm:
 ```bash
-curl -s http://localhost:3500/eth/v1/node/health | jq
+curl -s http://localhost:3500/eth/v1/node/syncing | jq
 ```
 ---
 
