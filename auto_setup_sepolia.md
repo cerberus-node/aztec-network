@@ -53,8 +53,11 @@ curl -L https://snapshots.publicnode.com/ethereum-sepolia-geth-part-8320240.tar.
 
 For Lighthouse:
 ```bash
-curl -L https://snapshots.publicnode.com/ethereum-sepolia-lighthouse-7619325.tar.lz4 -o lighthouse-snapshot.tar.lz4
-lz4 -d lighthouse-snapshot.tar.lz4 | tar -x -C ~/sepolia-node/lighthouse
+rm -rf ~/sepolia-node/lighthouse
+mkdir -p ~/sepolia-node/lighthouse
+
+curl -L https://snapshots.publicnode.com/ethereum-sepolia-lighthouse-7619325.tar.lz4 | lz4 -d | tar -x -C ~/sepolia-node/lighthouse
+
 ```
 
 For Prysm:
