@@ -73,10 +73,15 @@ curl -s -X POST http://localhost:8545 \
 ```
 
 ### Check Beacon API health:
+For Lighthouse:
 ```bash
 curl -s http://localhost:5052/eth/v1/node/syncing | jq
 ```
 
+For Prysm:
+```bash
+curl -s http://localhost:3500/eth/v1/node/health | jq
+```
 ---
 
 ## 🧠 Notes
@@ -84,7 +89,6 @@ curl -s http://localhost:5052/eth/v1/node/syncing | jq
 - The sync process may take several hours to complete.
 - Ensure enough disk space (1TB+) is available.
 - Once `eth_syncing` returns `false`, your RPC is fully operational.
-- You can now connect your L2 sequencer to `localhost:8551` (Engine API).
 
 ---
 
