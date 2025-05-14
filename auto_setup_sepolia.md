@@ -29,6 +29,40 @@ This will:
 
 ---
 
+## 📦 (Optional) Docker Snapshot Restore
+
+⚠️ Before Using Snapshots
+
+Before extracting snapshot archives, stop your node:
+
+#### For Docker:
+```bash
+cd ~/sepolia-node
+docker compose down
+```
+
+You can use a snapshot to significantly reduce sync time. Example for Geth:
+
+```bash
+curl -L https://snapshots.publicnode.com/ethereum-sepolia-geth-part-8320240.tar.lz4 -o geth-snapshot.tar.lz4
+sudo apt install -y lz4
+mkdir -p ~/sepolia-node/geth
+lz4 -d geth-snapshot.tar.lz4 | tar -x -C ~/sepolia-node/geth
+```
+
+For Lighthouse:
+```bash
+curl -L https://snapshots.publicnode.com/ethereum-sepolia-lighthouse-7619325.tar.lz4 -o lighthouse-snapshot.tar.lz4
+lz4 -d lighthouse-snapshot.tar.lz4 | tar -x -C ~/sepolia-node/lighthouse
+```
+
+For Prysm:
+```bash
+curl -L https://snapshots.publicnode.com/ethereum-sepolia-prysm-7619477.tar.lz4 -o prysm-snapshot.tar.lz4
+lz4 -d prysm-snapshot.tar.lz4 | tar -x -C ~/sepolia-node/prysm
+```
+---
+
 ## ✅ Verify
 
 ### Check sync progress:
@@ -116,6 +150,33 @@ mkdir -p ~/sepolia-node/prysm
 # Generate JWT secret
 openssl rand -hex 32 > ~/sepolia-node/jwt.hex
 chmod 600 ~/sepolia-node/jwt.hex
+```
+
+
+
+
+### 📦 (Optional) Systemd Snapshot Restore
+
+⚠️ Before Using Snapshots
+
+Before extracting snapshot archives, stop your node:
+
+#### For Systemd:
+```bash
+sudo systemctl stop sepolia-geth
+sudo systemctl stop sepolia-prysm
+```
+
+You can use a snapshot to speed up sync:
+
+```bash
+# Geth
+curl -L https://snapshots.publicnode.com/ethereum-sepolia-geth-part-8320240.tar.lz4 -o geth-snapshot.tar.lz4
+lz4 -d geth-snapshot.tar.lz4 | tar -x -C ~/sepolia-node/geth
+
+# Prysm
+curl -L https://snapshots.publicnode.com/ethereum-sepolia-prysm-7619477.tar.lz4 -o prysm-snapshot.tar.lz4
+lz4 -d prysm-snapshot.tar.lz4 | tar -x -C ~/sepolia-node/prysm
 ```
 
 ### 4. Create Service Files
