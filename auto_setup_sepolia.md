@@ -121,43 +121,41 @@ chmod 600 ~/sepolia-node/jwt.hex
 ### 4. Create Service Files
 
 Create Geth service file:
-```bash
-sudo nano /etc/systemd/system/sepolia-geth.service
-```
-
-Add the following content:
 ```ini
+sudo tee /etc/systemd/system/sepolia-geth.service > /dev/null <<EOF
 [Unit]
 Description=Sepolia Geth Node
 After=network.target
 
 [Service]
 Type=simple
-User=$USER
-WorkingDirectory=/home/$USER/sepolia-node
-ExecStart=/usr/bin/geth --sepolia \
-  --http --http.addr 0.0.0.0 --http.port 8545 \
-  --http.api eth,net,engine,debug,txpool,web3 \
-  --authrpc.addr 0.0.0.0 --authrpc.port 8551 --authrpc.vhosts "*" \
-  --authrpc.jwtsecret=/home/$USER/sepolia-node/jwt.hex \
-  --datadir /home/$USER/sepolia-node/geth \
-  --syncmode snap \
-  --cache 4096 \
+User=$(whoami)
+WorkingDirectory=$HOME/sepolia-node
+ExecStart=/usr/bin/geth --sepolia \\
+  --http --http.addr 0.0.0.0 --http.port 8545 \\
+  --http.api eth,net,engine,debug,txpool,web3 \\
+  --authrpc.addr 0.0.0.0 --authrpc.port 8551 --authrpc.vhosts "*" \\
+  --authrpc.jwtsecret=$HOME/sepolia-node/jwt.hex \\
+  --datadir $HOME/sepolia-node/geth \\
+  --syncmode snap \\
+  --cache 4096 \\
   --metrics --pprof --pprof.addr 0.0.0.0 --pprof.port 6060
 Restart=always
 RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
+EOF
+
+# 🔄 Reload systemd
+sudo systemctl daemon-reload
+
 ```
 
 Create Prysm service file:
-```bash
-sudo nano /etc/systemd/system/sepolia-prysm.service
-```
 
-Add the following content:
 ```ini
+sudo tee /etc/systemd/system/sepolia-prysm.service > /dev/null <<EOF
 [Unit]
 Description=Sepolia Prysm Beacon Node
 After=network.target sepolia-geth.service
@@ -165,22 +163,27 @@ Requires=sepolia-geth.service
 
 [Service]
 Type=simple
-User=$USER
-WorkingDirectory=/home/$USER/sepolia-node
-ExecStart=/home/$USER/.local/bin/prysm beacon-chain \
-  --sepolia \
-  --datadir=/home/$USER/sepolia-node/prysm \
-  --execution-endpoint=http://localhost:8551 \
-  --jwt-secret=/home/$USER/sepolia-node/jwt.hex \
-  --genesis-beacon-api-url=https://lodestar-sepolia.chainsafe.io \
-  --checkpoint-sync-url=https://sepolia.checkpoint-sync.ethpandaops.io \
-  --accept-terms-of-use \
+User=$(whoami)
+WorkingDirectory=$HOME/sepolia-node
+ExecStart=$HOME/.local/bin/prysm beacon-chain \\
+  --sepolia \\
+  --datadir=$HOME/sepolia-node/prysm \\
+  --execution-endpoint=http://localhost:8551 \\
+  --jwt-secret=$HOME/sepolia-node/jwt.hex \\
+  --genesis-beacon-api-url=https://lodestar-sepolia.chainsafe.io \\
+  --checkpoint-sync-url=https://sepolia.checkpoint-sync.ethpandaops.io \\
+  --accept-terms-of-use \\
   --suggested-fee-recipient=0x0000000000000000000000000000000000000000
 Restart=always
 RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
+EOF
+
+# 🔄 Reload systemd
+sudo systemctl daemon-reload
+
 ```
 
 ### 5. Enable and Start Services
