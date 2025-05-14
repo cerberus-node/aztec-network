@@ -44,10 +44,11 @@ docker compose down
 You can use a snapshot to significantly reduce sync time. Example for Geth:
 
 ```bash
-curl -L https://snapshots.publicnode.com/ethereum-sepolia-geth-part-8320240.tar.lz4 -o geth-snapshot.tar.lz4
-sudo apt install -y lz4
+sudo apt update && sudo apt install -y lz4
+rm -rf ~/sepolia-node/geth
 mkdir -p ~/sepolia-node/geth
-lz4 -d geth-snapshot.tar.lz4 | tar -x -C ~/sepolia-node/geth
+
+curl -L https://snapshots.publicnode.com/ethereum-sepolia-geth-part-8320240.tar.lz4 | lz4 -d | tar -x -C ~/sepolia-node/geth
 ```
 
 For Lighthouse:
@@ -58,8 +59,12 @@ lz4 -d lighthouse-snapshot.tar.lz4 | tar -x -C ~/sepolia-node/lighthouse
 
 For Prysm:
 ```bash
-curl -L https://snapshots.publicnode.com/ethereum-sepolia-prysm-7619477.tar.lz4 -o prysm-snapshot.tar.lz4
-lz4 -d prysm-snapshot.tar.lz4 | tar -x -C ~/sepolia-node/prysm
+sudo apt update && sudo apt install -y lz4
+rm -rf ~/sepolia-node/prysm
+mkdir -p ~/sepolia-node/prysm
+
+curl -L https://snapshots.publicnode.com/ethereum-sepolia-prysm-7619477.tar.lz4 | lz4 -d | tar -x -C ~/sepolia-node/prysm
+
 ```
 ---
 
