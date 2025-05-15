@@ -109,6 +109,8 @@ cd ~/sepolia-node
 docker compose logs -f geth
 
 docker compose logs -f lighthouse
+
+docker compose logs -f --tail 100 prysm
 ```
 
 To restart:
