@@ -187,7 +187,7 @@ You can use a snapshot to speed up sync:
 sudo apt update && sudo apt install -y lz4
 rm -rf ~/sepolia-node/geth
 mkdir -p ~/sepolia-node/geth
-curl -L https://snapshots.publicnode.com/ethereum-sepolia-geth-part-8320240.tar.lz4 | lz4 -d | tar -x -C ~/sepolia-node/geth
+curl -L https://snapshots.publicnode.com/ethereum-sepolia-geth-part-8327191.tar.lz4 | lz4 -d | tar -x -C ~/sepolia-node/geth
 ```
 # Prysm
 ```bash
