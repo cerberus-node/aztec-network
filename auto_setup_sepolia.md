@@ -48,7 +48,7 @@ sudo apt update && sudo apt install -y lz4
 rm -rf ~/sepolia-node/geth
 mkdir -p ~/sepolia-node/geth
 
-curl -L https://snapshots.publicnode.com/ethereum-sepolia-geth-part-8320240.tar.lz4 | lz4 -d | tar -x -C ~/sepolia-node/geth
+curl -L https://snapshots.publicnode.com/ethereum-sepolia-geth-part-8327191.tar.lz4 | lz4 -d | tar -x -C ~/sepolia-node/geth
 ```
 
 For Lighthouse:
@@ -57,7 +57,7 @@ sudo apt update && sudo apt install -y lz4
 rm -rf ~/sepolia-node/lighthouse
 mkdir -p ~/sepolia-node/lighthouse
 
-curl -L https://snapshots.publicnode.com/ethereum-sepolia-lighthouse-7619325.tar.lz4 | lz4 -d | tar -x -C ~/sepolia-node/lighthouse
+curl -L https://snapshots.publicnode.com/ethereum-sepolia-lighthouse-7633727.tar.lz4 | lz4 -d | tar -x -C ~/sepolia-node/lighthouse
 
 ```
 
@@ -67,7 +67,7 @@ sudo apt update && sudo apt install -y lz4
 rm -rf ~/sepolia-node/prysm
 mkdir -p ~/sepolia-node/prysm
 
-curl -L https://snapshots.publicnode.com/ethereum-sepolia-prysm-7619477.tar.lz4 | lz4 -d | tar -x -C ~/sepolia-node/prysm
+curl -L https://snapshots.publicnode.com/ethereum-sepolia-prysm-7633878.tar.lz4 | lz4 -d | tar -x -C ~/sepolia-node/prysm
 
 ```
 ---
@@ -195,7 +195,7 @@ sudo apt update && sudo apt install -y lz4
 rm -rf ~/sepolia-node/prysm
 mkdir -p ~/sepolia-node/prysm
 
-curl -L https://snapshots.publicnode.com/ethereum-sepolia-prysm-7619477.tar.lz4 | lz4 -d | tar -x -C ~/sepolia-node/prysm
+curl -L https://snapshots.publicnode.com/ethereum-sepolia-prysm-7633878.tar.lz4 | lz4 -d | tar -x -C ~/sepolia-node/prysm
 
 ```
 
