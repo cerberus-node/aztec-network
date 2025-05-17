@@ -29,49 +29,6 @@ This will:
 
 ---
 
-## 📦 (Optional) Docker Snapshot Restore
-
-⚠️ Before Using Snapshots
-
-Before extracting snapshot archives, stop your node:
-
-#### For Docker:
-```bash
-cd ~/sepolia-node
-docker compose down
-```
-
-You can use a snapshot to significantly reduce sync time. Example for Geth:
-
-```bash
-sudo apt update && sudo apt install -y lz4
-rm -rf ~/sepolia-node/geth
-mkdir -p ~/sepolia-node/geth
-
-curl -L https://snapshots.publicnode.com/ethereum-sepolia-geth-part-8327191.tar.lz4 | lz4 -d | tar -x -C ~/sepolia-node
-```
-
-For Lighthouse:
-```bash
-sudo apt update && sudo apt install -y lz4
-rm -rf ~/sepolia-node/lighthouse
-mkdir -p ~/sepolia-node/lighthouse
-
-curl -L https://snapshots.publicnode.com/ethereum-sepolia-lighthouse-7633727.tar.lz4 | lz4 -d | tar -x -C ~/sepolia-node/lighthouse
-
-```
-
-For Prysm:
-```bash
-sudo apt update && sudo apt install -y lz4
-rm -rf ~/sepolia-node/prysm
-mkdir -p ~/sepolia-node/prysm
-
-curl -L https://snapshots.publicnode.com/ethereum-sepolia-prysm-7633878.tar.lz4 | lz4 -d | tar -x -C ~/sepolia-node/prysm
-
-```
----
-
 ## ✅ Verify
 
 ### Check sync progress:
@@ -165,40 +122,6 @@ mkdir -p ~/sepolia-node/prysm
 # Generate JWT secret
 openssl rand -hex 32 > ~/sepolia-node/jwt.hex
 chmod 600 ~/sepolia-node/jwt.hex
-```
-
-
-
-
-### 📦 (Optional) Systemd Snapshot Restore
-
-⚠️ Before Using Snapshots
-
-Before extracting snapshot archives, stop your node:
-
-#### For Systemd:
-```bash
-sudo systemctl stop sepolia-geth
-sudo systemctl stop sepolia-prysm
-```
-
-You can use a snapshot to speed up sync:
-
-```bash
-# Geth
-sudo apt update && sudo apt install -y lz4
-rm -rf ~/sepolia-node/geth
-mkdir -p ~/sepolia-node/geth
-curl -L https://snapshots.publicnode.com/ethereum-sepolia-geth-part-8327191.tar.lz4 | lz4 -d | tar -x -C ~/sepolia-node
-```
-# Prysm
-```bash
-sudo apt update && sudo apt install -y lz4
-rm -rf ~/sepolia-node/prysm
-mkdir -p ~/sepolia-node/prysm
-
-curl -L https://snapshots.publicnode.com/ethereum-sepolia-prysm-7633878.tar.lz4 | lz4 -d | tar -x -C ~/sepolia-node/prysm
-
 ```
 
 ### 4. Create Service Files
