@@ -60,7 +60,7 @@ version: '3.8'
 services:
   aztec-node:
     container_name: aztec-sequencer
-    image: aztecprotocol/aztec:0.85.0-alpha-testnet.8
+    image: aztecprotocol/aztec:alpha-testnet
     restart: unless-stopped
     environment:
       ETHEREUM_HOSTS: \${ETHEREUM_HOSTS}
