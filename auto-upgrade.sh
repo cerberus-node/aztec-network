@@ -2,7 +2,7 @@
 set -e
 
 # Config
-IMAGE_TAG="aztecprotocol/aztec:0.85.0-alpha-testnet.8"
+IMAGE_TAG="aztecprotocol/aztec:alpha-testnet"
 COMPOSE_FILE="docker-compose.yml"
 
 # Check if compose file exists
