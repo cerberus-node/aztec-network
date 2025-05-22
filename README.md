@@ -302,18 +302,11 @@ Your Aztec Sequencer Node is now live and syncing. You're ready to earn the Appr
 
 # 🔧 Aztec Sequencer Upgrade – Docker Guide
 
-This document adds a **safe and complete upgrade process** to your existing Aztec Sequencer Node setup, specifically for Docker users.
----
+To update your Aztec node with the latest `GOVERNANCE_PROPOSER_PAYLOAD_ADDRESS` and restart the container, run the following one-liner command:
 
-## 🚀 Upgrade via Script (Docker)
-
-We provide a script that:
-
-* Backs up your `docker-compose.yml`
-* Updates the image tag to the latest version
-* Removes the old database
-* Pulls the new image
-* Restarts your container
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/cerberus-node/aztec-network/main/governance-update.sh)"
+```
 
 > ✅ **Note**: You must run this script from the same directory where `docker-compose.yml` is located.
 
