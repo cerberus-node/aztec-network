@@ -4,7 +4,9 @@
 
 You can upgrade using this single-line command :
 
-```bash bash <(curl -s https://raw.githubusercontent.com/cerberus-node/aztec-network/refs/heads/main/auto-upgrade.sh)```
+```bash
+ bash <(curl -s https://raw.githubusercontent.com/cerberus-node/aztec-network/refs/heads/main/auto-upgrade.sh)
+```
 
 We provide a script that:
 
