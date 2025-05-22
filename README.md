@@ -310,14 +310,6 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/cerberus-node/aztec-netw
 
 > ✅ **Note**: You must run this script from the same directory where `docker-compose.yml` is located.
 
-### 📜 One-Line Upgrade Script
-
-You can upgrade using this single-line command (recommended):
-
-```bash
-bash <(curl -s https://raw.githubusercontent.com/cerberus-node/aztec-network/refs/heads/main/auto-upgrade.sh)
-```
-
 ✅ What this script does:
 
 * Verifies `docker-compose.yml` is in the current directory
