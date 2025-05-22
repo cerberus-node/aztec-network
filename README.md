@@ -310,14 +310,6 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/cerberus-node/aztec-netw
 
 > ✅ **Note**: You must run this script from the same directory where `docker-compose.yml` is located.
 
-✅ What this script does:
-
-* Verifies `docker-compose.yml` is in the current directory
-* Backs up and updates the image version
-* Removes old database
-* Pulls the latest image
-* Restarts the container
-* Streams logs for confirmation
 ---
 
 ## 🧪 Final Check – Logs
