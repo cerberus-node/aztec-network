@@ -104,6 +104,7 @@ services:
       --http.corsdomain="*"
       --syncmode=snap
       --cache=8192
+      --http.vhosts=*
 EOF
 
 if [ "$BEACON" = "prysm" ]; then
