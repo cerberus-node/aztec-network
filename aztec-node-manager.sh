@@ -96,7 +96,7 @@ show_welcome() {
     echo -e "${YELLOW}🤖 Telegram Bot: @cerberus_service_bot${NC}"
     echo -e "${YELLOW}💡 Get RPC endpoints & support via Telegram${NC}"
     echo -e "${BLUE}=================================================${NC}"
-    sleep 2
+    sleep 1
 }
 
 # Function to check if Docker is installed
@@ -487,16 +487,78 @@ shell_access() {
 
 # Function to buy RPC/Beacon key
 buy_key() {
-    echo -e "${YELLOW}Buying RPC/Beacon key... under maintenance${NC}"
-    echo -e "${BLUE}Please visit our Telegram bot to purchase keys:${NC}"
-    echo -e "${YELLOW}👉 https://t.me/cerberus_service_bot${NC}"
-    echo -e "\n${GREEN}Benefits of using Cerberus Service:${NC}"
-    echo -e "✅ Reliable RPC endpoints"
-    echo -e "✅ High-performance Beacon nodes"
-    echo -e "✅ 24/7 monitoring and support"
-    echo -e "✅ Cost-effective solution"
-    echo -e "✅ No need to run your own Geth + Beacon nodes"
-    read -p "Press Enter to continue..."
+    while true; do
+        clear
+        echo -e "${BLUE}=================================================${NC}"
+        echo -e "${YELLOW}🤖 Cerberus Service - ETH Sepolia Node Service${NC}"
+        echo -e "${BLUE}=================================================${NC}"
+        
+        echo -e "\n${GREEN}Services Available:${NC}"
+        echo -e "• ${YELLOW}Full Package${NC} - RPC + Beacon (Best value)"
+        
+        echo -e "\n${BLUE}Features:${NC}"
+        echo -e "✅ Good support"
+        echo -e "✅ High availability"
+        echo -e "✅ Low latency"
+        echo -e "✅ Cost-effective"
+        echo -e "✅ Unlimited requests"
+        
+        echo -e "\n${YELLOW}Pricing Plans (USDT/USDC):${NC}"
+        echo -e "1) ${GREEN}1 Month${NC}  - ${YELLOW}10 USD${NC}"
+        echo -e "2) ${GREEN}3 Months${NC} - ${YELLOW}30 USD${NC}"
+        echo -e "3) ${GREEN}6 Months${NC} - ${YELLOW}50 USD${NC}"
+        echo -e "4) ${GREEN}12 Months${NC} - ${YELLOW}90 USD${NC}"
+        
+        echo -e "\n${YELLOW}Purchase Options:${NC}"
+        echo -e "1) Buy via Telegram Bot"
+        echo -e "2) Buy Directly (Coming Soon)"
+        echo -e "3) View Service Status"
+        echo -e "0) Back to main menu"
+        
+        read -p "Enter your choice: " purchase_choice
+        
+        case $purchase_choice in
+            1)
+                echo -e "\n${YELLOW}Get Started:${NC}"
+                echo -e "👉 Visit: ${YELLOW}@cerberus_service_bot${NC}"
+                echo -e "📧 Support: ${YELLOW}@cerberus_support${NC}"
+                echo -e "\n${BLUE}Select your preferred duration in the bot:${NC}"
+                echo -e "• 1 Month  - 10 USD"
+                echo -e "• 3 Months - 30 USD"
+                echo -e "• 6 Months - 50 USD"
+                echo -e "• 12 Months - 90 USD"
+                read -p "Press Enter to continue..."
+                ;;
+            2)
+                echo -e "\n${YELLOW}Direct Purchase (Coming Soon)${NC}"
+                echo -e "${BLUE}Payment Method:${NC}"
+                echo -e "• Crypto (USDT, USDC)"
+                echo -e "\n${BLUE}Pricing:${NC}"
+                echo -e "• 1 Month  - 10 USD"
+                echo -e "• 3 Months - 30 USD"
+                echo -e "• 6 Months - 50 USD"
+                echo -e "• 12 Months - 90 USD"
+                echo -e "\n${BLUE}This feature will be available soon!${NC}"
+                read -p "Press Enter to continue..."
+                ;;
+            3)
+                echo -e "\n${BLUE}Checking Cerberus Service Status...${NC}"
+                if curl -s https://service.cerberusnode.com/health | grep -q "healthy"; then
+                    echo -e "${GREEN}✅ Cerberus Service is online${NC}"
+                else
+                    echo -e "${RED}❌ Cerberus Service is offline${NC}"
+                fi
+                read -p "Press Enter to continue..."
+                ;;
+            0)
+                return
+                ;;
+            *)
+                echo -e "${RED}Invalid choice!${NC}"
+                read -p "Press Enter to continue..."
+                ;;
+        esac
+    done
 }
 
 # Function to factory reset
