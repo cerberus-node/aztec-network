@@ -115,6 +115,49 @@ check_docker_compose() {
     fi
 }
 
+# Function to setup firewall ports
+setup_firewall_ports() {
+    local service=$1
+    echo -e "${YELLOW}Configuring firewall for $service...${NC}"
+    
+    # Check if ufw is installed
+    if ! command -v ufw &> /dev/null; then
+        echo -e "${YELLOW}Installing ufw...${NC}"
+        sudo apt-get update
+        sudo apt-get install -y ufw
+    fi
+    
+    # Check if ufw is active
+    if ! sudo ufw status | grep -q "Status: active"; then
+        echo -e "${YELLOW}Enabling ufw...${NC}"
+        sudo ufw --force enable
+    fi
+    
+    case $service in
+        "aztec")
+            echo -e "${YELLOW}Opening ports for Aztec Sequencer...${NC}"
+            sudo ufw allow 40400/tcp comment 'Aztec Sequencer TCP' 2>/dev/null || true
+            sudo ufw allow 40400/udp comment 'Aztec Sequencer UDP' 2>/dev/null || true
+            sudo ufw allow 8080/tcp comment 'Aztec Sequencer API' 2>/dev/null || true
+            ;;
+        "geth")
+            echo -e "${YELLOW}Opening ports for Geth...${NC}"
+            sudo ufw allow 30303/tcp comment 'Geth P2P TCP' 2>/dev/null || true
+            sudo ufw allow 30303/udp comment 'Geth P2P UDP' 2>/dev/null || true
+            sudo ufw allow 8545/tcp comment 'Geth RPC' 2>/dev/null || true
+            ;;
+        "beacon")
+            echo -e "${YELLOW}Opening ports for Beacon...${NC}"
+            sudo ufw allow 12000/udp comment 'Beacon P2P UDP' 2>/dev/null || true
+            sudo ufw allow 13000/tcp comment 'Beacon P2P TCP' 2>/dev/null || true
+            sudo ufw allow 5052/tcp comment 'Beacon API' 2>/dev/null || true
+            ;;
+    esac
+    
+    # Always ensure SSH is allowed
+    sudo ufw allow ssh comment 'SSH' 2>/dev/null || true
+}
+
 # Function to setup Geth + Beacon Node
 setup_eth_node() {
     echo -e "${YELLOW}Setting up Geth + Beacon Node...${NC}"
@@ -128,6 +171,10 @@ setup_eth_node() {
     
     # Run setup script
     cd "$NODE_DIR" && ./auto-setup-sepolia.sh
+
+    # Configure firewall for Geth and Beacon
+    setup_firewall_ports "geth"
+    setup_firewall_ports "beacon"
 
     # Save RPC and Beacon URLs for later use
     local rpc_url="http://localhost:8545"
@@ -177,6 +224,9 @@ setup_aztec_sequencer() {
     sudo apt install -y curl iptables build-essential git wget lz4 jq make gcc nano automake autoconf \
       tmux htop nvme-cli libgbm1 pkg-config libssl-dev libleveldb-dev tar clang \
       bsdmainutils ncdu unzip ca-certificates gnupg
+    
+    # Configure firewall for Aztec Sequencer
+    setup_firewall_ports "aztec"
     
     # Step 1: Install Docker
     echo "🐳 Installing Docker..."
@@ -876,46 +926,14 @@ cleanup_backup_files() {
     find "$AZTEC_DIR" -name "*.bak" -type f -delete
 }
 
-# Function to configure firewall
+# Function to configure firewall (now uses the helper function)
 configure_firewall() {
     echo -e "${YELLOW}Configuring Firewall...${NC}"
     
-    # Check if ufw is installed
-    if ! command -v ufw &> /dev/null; then
-        echo -e "${YELLOW}Installing ufw...${NC}"
-        sudo apt-get update
-        sudo apt-get install -y ufw
-    fi
-    
-    # Check if ufw is active
-    if ! sudo ufw status | grep -q "Status: active"; then
-        echo -e "${YELLOW}Enabling ufw...${NC}"
-        sudo ufw --force enable
-    fi
-    
-    echo -e "${BLUE}Configuring required ports:${NC}"
-    
-    # Required ports for Aztec Sequencer
-    echo -e "${YELLOW}Opening ports for Aztec Sequencer...${NC}"
-    sudo ufw allow 40400/tcp comment 'Aztec Sequencer TCP'
-    sudo ufw allow 40400/udp comment 'Aztec Sequencer UDP'
-    sudo ufw allow 8080/tcp comment 'Aztec Sequencer API'
-    
-    # Required ports for Geth
-    echo -e "${YELLOW}Opening ports for Geth...${NC}"
-    sudo ufw allow 30303/tcp comment 'Geth P2P TCP'
-    sudo ufw allow 30303/udp comment 'Geth P2P UDP'
-    sudo ufw allow 8545/tcp comment 'Geth RPC'
-    
-    # Required ports for Beacon
-    echo -e "${YELLOW}Opening ports for Beacon...${NC}"
-    sudo ufw allow 12000/udp comment 'Beacon P2P UDP'
-    sudo ufw allow 13000/tcp comment 'Beacon P2P TCP'
-    sudo ufw allow 5052/tcp comment 'Beacon API'
-    
-    # Always allow SSH
-    echo -e "${YELLOW}Ensuring SSH access...${NC}"
-    sudo ufw allow ssh comment 'SSH'
+    # Configure all services
+    setup_firewall_ports "aztec"
+    setup_firewall_ports "geth"
+    setup_firewall_ports "beacon"
     
     # Show status
     echo -e "\n${GREEN}Firewall Status:${NC}"
