@@ -23,6 +23,36 @@ for port in 80 8545 30303 8551 4000 3500 5052 9000; do
     fi
 done
 
+# === CHECK FOR EXISTING SETUP ===
+if [ -f "$COMPOSE_FILE" ]; then
+    CURRENT_BEACON=""
+    if grep -q 'prysm:' "$COMPOSE_FILE"; then
+        CURRENT_BEACON="prysm"
+    elif grep -q 'lighthouse:' "$COMPOSE_FILE"; then
+        CURRENT_BEACON="lighthouse"
+    fi
+    if [ -n "$CURRENT_BEACON" ]; then
+        OTHER_BEACON="prysm"
+        [ "$CURRENT_BEACON" = "prysm" ] && OTHER_BEACON="lighthouse"
+        echo "\n>>> Detected existing setup using $CURRENT_BEACON."
+        read -rp "Do you want to switch to $OTHER_BEACON? (y/n): " SWITCH_BEACON
+        if [[ "$SWITCH_BEACON" =~ ^[Yy]$ ]]; then
+            echo ">>> Stopping current beacon client ($CURRENT_BEACON)..."
+            cd "$DATA_DIR"
+            docker compose stop $CURRENT_BEACON || true
+            echo ">>> Switching to $OTHER_BEACON..."
+            BEACON_CHOICE="1"
+            [ "$OTHER_BEACON" = "lighthouse" ] && BEACON_CHOICE="2"
+            # Remove old beacon volumes if desired (optional)
+            # rm -rf "$DATA_DIR/$CURRENT_BEACON"
+        else
+            echo ">>> Keeping current beacon client ($CURRENT_BEACON)."
+            BEACON_CHOICE="1"
+            [ "$CURRENT_BEACON" = "lighthouse" ] && BEACON_CHOICE="2"
+        fi
+    fi
+fi
+
 # === CHOOSE BEACON CLIENT ===
 echo ">>> Choose beacon client to use:"
 echo "1) Prysm"
