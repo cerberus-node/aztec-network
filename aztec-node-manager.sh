@@ -71,6 +71,7 @@ show_menu() {
     echo -e "[8] Upgrade Sequencer Node"
     echo -e "[9] Manage Governance Proposal"
     echo -e "[10] Manage Environment Variables"
+    echo -e "[11] Configure Firewall"
     echo -e "[99] Factory Reset (DANGER)"
     echo -e "[0] Exit"
     echo -e "${BLUE}-------------------------------------------------${NC}"
@@ -436,7 +437,7 @@ shell_access() {
 
 # Function to buy RPC/Beacon key
 buy_key() {
-    echo -e "${YELLOW}Buying RPC/Beacon key...${NC}"
+    echo -e "${YELLOW}Buying RPC/Beacon key... under maintenance${NC}"
     echo -e "${BLUE}Please visit our Telegram bot to purchase keys:${NC}"
     echo -e "${YELLOW}👉 https://t.me/cerberus_service_bot${NC}"
     echo -e "\n${GREEN}Benefits of using Cerberus Service:${NC}"
@@ -875,6 +876,56 @@ cleanup_backup_files() {
     find "$AZTEC_DIR" -name "*.bak" -type f -delete
 }
 
+# Function to configure firewall
+configure_firewall() {
+    echo -e "${YELLOW}Configuring Firewall...${NC}"
+    
+    # Check if ufw is installed
+    if ! command -v ufw &> /dev/null; then
+        echo -e "${YELLOW}Installing ufw...${NC}"
+        sudo apt-get update
+        sudo apt-get install -y ufw
+    fi
+    
+    # Check if ufw is active
+    if ! sudo ufw status | grep -q "Status: active"; then
+        echo -e "${YELLOW}Enabling ufw...${NC}"
+        sudo ufw --force enable
+    fi
+    
+    echo -e "${BLUE}Configuring required ports:${NC}"
+    
+    # Required ports for Aztec Sequencer
+    echo -e "${YELLOW}Opening ports for Aztec Sequencer...${NC}"
+    sudo ufw allow 40400/tcp comment 'Aztec Sequencer TCP'
+    sudo ufw allow 40400/udp comment 'Aztec Sequencer UDP'
+    sudo ufw allow 8080/tcp comment 'Aztec Sequencer API'
+    
+    # Required ports for Geth
+    echo -e "${YELLOW}Opening ports for Geth...${NC}"
+    sudo ufw allow 30303/tcp comment 'Geth P2P TCP'
+    sudo ufw allow 30303/udp comment 'Geth P2P UDP'
+    sudo ufw allow 8545/tcp comment 'Geth RPC'
+    
+    # Required ports for Beacon
+    echo -e "${YELLOW}Opening ports for Beacon...${NC}"
+    sudo ufw allow 12000/udp comment 'Beacon P2P UDP'
+    sudo ufw allow 13000/tcp comment 'Beacon P2P TCP'
+    sudo ufw allow 5052/tcp comment 'Beacon API'
+    
+    # Always allow SSH
+    echo -e "${YELLOW}Ensuring SSH access...${NC}"
+    sudo ufw allow ssh comment 'SSH'
+    
+    # Show status
+    echo -e "\n${GREEN}Firewall Status:${NC}"
+    sudo ufw status numbered
+    
+    echo -e "\n${GREEN}Firewall configuration completed!${NC}"
+    echo -e "${YELLOW}Note: Make sure to keep your SSH port secure${NC}"
+    read -p "Press Enter to continue..."
+}
+
 # Main loop
 while true; do
     if [ "$FIRST_RUN" = "true" ]; then
@@ -916,6 +967,9 @@ while true; do
             ;;
         10)
             manage_env
+            ;;
+        11)
+            configure_firewall
             ;;
         99)
             factory_reset
