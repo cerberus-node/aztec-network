@@ -259,7 +259,7 @@ EOF
 services:
   aztec-node:
     container_name: aztec-sequencer
-    image: aztecprotocol/aztec:0.87.2
+    image: aztecprotocol/aztec:0.87.6
     restart: unless-stopped
     environment:
       ETHEREUM_HOSTS: \${ETHEREUM_HOSTS}
