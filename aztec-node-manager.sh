@@ -373,7 +373,17 @@ view_logs() {
             cd ~ && cd "$NODE_DIR" && docker compose logs -f geth
             ;;
         2)
-            cd ~ && cd "$NODE_DIR" && docker compose logs -f prysm
+            cd ~ && cd "$NODE_DIR"
+            # Check which beacon client is configured
+            if docker compose config | grep -q "prysm:"; then
+                echo -e "${BLUE}Viewing Prysm beacon logs...${NC}"
+                docker compose logs -f prysm
+            elif docker compose config | grep -q "lighthouse:"; then
+                echo -e "${BLUE}Viewing Lighthouse beacon logs...${NC}"
+                docker compose logs -f lighthouse
+            else
+                echo -e "${RED}No beacon client found in configuration!${NC}"
+            fi
             ;;
         3)
             cd ~ && cd "$AZTEC_DIR" && docker compose logs -f aztec-node
