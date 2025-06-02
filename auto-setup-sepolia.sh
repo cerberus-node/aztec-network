@@ -239,7 +239,8 @@ EOF
 
 # Create HAProxy configuration
 echo ">>> Creating HAProxy configuration..."
-cat > "$DATA_DIR/haproxy.cfg" <<EOF
+if [ "$BEACON" = "prysm" ]; then
+    cat > "$DATA_DIR/haproxy.cfg" <<EOF
 global
     log /dev/log local0
     log /dev/log local1 notice
@@ -297,8 +298,70 @@ backend geth_ws
 
 backend beacon_http
     mode http
-    server beacon1 ${BEACON}:${BEACON == "prysm" ? "4000" : "5052"} check
+    server beacon1 prysm:4000 check
 EOF
+else
+    cat > "$DATA_DIR/haproxy.cfg" <<EOF
+global
+    log /dev/log local0
+    log /dev/log local1 notice
+    chroot /var/lib/haproxy
+    stats socket /run/haproxy/admin.sock mode 660 level admin expose-fd listeners
+    stats timeout 30s
+    user haproxy
+    group haproxy
+    daemon
+
+defaults
+    log     global
+    mode    http
+    option  httplog
+    option  dontlognull
+    timeout connect 5000
+    timeout client  50000
+    timeout server  50000
+
+frontend stats
+    bind *:8404
+    stats enable
+    stats uri /stats
+    stats refresh 10s
+    stats admin if TRUE
+
+frontend geth_http
+    bind *:80
+    mode http
+    option httplog
+    acl is_geth path_beg /rpc
+    use_backend geth_http if is_geth
+
+frontend geth_ws
+    bind *:80
+    mode http
+    option httplog
+    acl is_ws hdr(Upgrade) -i WebSocket
+    use_backend geth_ws if is_ws
+
+frontend beacon_http
+    bind *:80
+    mode http
+    option httplog
+    acl is_beacon path_beg /beacon
+    use_backend beacon_http if is_beacon
+
+backend geth_http
+    mode http
+    server geth1 geth:8545 check
+
+backend geth_ws
+    mode http
+    server geth1 geth:8545 check
+
+backend beacon_http
+    mode http
+    server beacon1 lighthouse:5052 check
+EOF
+fi
 
 # === START DOCKER ===
 echo ">>> Starting Sepolia node with $BEACON..."
