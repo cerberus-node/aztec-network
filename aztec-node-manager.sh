@@ -72,6 +72,7 @@ show_menu() {
     echo -e "[9] Manage Governance Proposal"
     echo -e "[10] Manage Environment Variables"
     echo -e "[11] Configure Firewall"
+    echo -e "[12] Manage Services (Start/Stop/Restart)"
     echo -e "[99] Factory Reset (DANGER)"
     echo -e "[0] Exit"
     echo -e "${BLUE}-------------------------------------------------${NC}"
@@ -1016,6 +1017,199 @@ configure_firewall() {
     read -p "Press Enter to continue..."
 }
 
+# Function to manage services
+manage_services() {
+    while true; do
+        echo -e "\n${BLUE}Service Management Menu:${NC}"
+        echo "1) Manage Geth"
+        echo "2) Manage Beacon Node"
+        echo "3) Manage Aztec Sequencer"
+        echo "4) Manage All Services"
+        echo "0) Back to main menu"
+        
+        read -p "Enter your choice: " service_choice
+        
+        case $service_choice in
+            1)
+                echo -e "\n${BLUE}Geth Service Management:${NC}"
+                echo "1) Start Geth"
+                echo "2) Stop Geth"
+                echo "3) Restart Geth"
+                echo "0) Back"
+                
+                read -p "Enter your choice: " geth_choice
+                
+                case $geth_choice in
+                    1)
+                        if [ -f "$DOCKER_COMPOSE_FILE" ]; then
+                            cd ~ && cd "$NODE_DIR" && docker compose up -d geth
+                            echo -e "${GREEN}Geth started!${NC}"
+                        else
+                            echo -e "${RED}ETH Node not set up yet.${NC}"
+                        fi
+                        ;;
+                    2)
+                        if [ -f "$DOCKER_COMPOSE_FILE" ]; then
+                            cd ~ && cd "$NODE_DIR" && docker compose stop geth
+                            echo -e "${GREEN}Geth stopped!${NC}"
+                        fi
+                        ;;
+                    3)
+                        if [ -f "$DOCKER_COMPOSE_FILE" ]; then
+                            cd ~ && cd "$NODE_DIR" && docker compose restart geth
+                            echo -e "${GREEN}Geth restarted!${NC}"
+                        fi
+                        ;;
+                    0)
+                        continue
+                        ;;
+                    *)
+                        echo -e "${RED}Invalid choice!${NC}"
+                        ;;
+                esac
+                ;;
+            2)
+                echo -e "\n${BLUE}Beacon Node Service Management:${NC}"
+                echo "1) Start Beacon Node"
+                echo "2) Stop Beacon Node"
+                echo "3) Restart Beacon Node"
+                echo "0) Back"
+                
+                read -p "Enter your choice: " beacon_choice
+                
+                case $beacon_choice in
+                    1)
+                        if [ -f "$DOCKER_COMPOSE_FILE" ]; then
+                            cd ~ && cd "$NODE_DIR" && docker compose up -d prysm
+                            echo -e "${GREEN}Beacon Node started!${NC}"
+                        else
+                            echo -e "${RED}ETH Node not set up yet.${NC}"
+                        fi
+                        ;;
+                    2)
+                        if [ -f "$DOCKER_COMPOSE_FILE" ]; then
+                            cd ~ && cd "$NODE_DIR" && docker compose stop prysm
+                            echo -e "${GREEN}Beacon Node stopped!${NC}"
+                        fi
+                        ;;
+                    3)
+                        if [ -f "$DOCKER_COMPOSE_FILE" ]; then
+                            cd ~ && cd "$NODE_DIR" && docker compose restart prysm
+                            echo -e "${GREEN}Beacon Node restarted!${NC}"
+                        fi
+                        ;;
+                    0)
+                        continue
+                        ;;
+                    *)
+                        echo -e "${RED}Invalid choice!${NC}"
+                        ;;
+                esac
+                ;;
+            3)
+                echo -e "\n${BLUE}Aztec Sequencer Service Management:${NC}"
+                echo "1) Start Aztec Sequencer"
+                echo "2) Stop Aztec Sequencer"
+                echo "3) Restart Aztec Sequencer"
+                echo "0) Back"
+                
+                read -p "Enter your choice: " aztec_choice
+                
+                case $aztec_choice in
+                    1)
+                        if [ -d "$AZTEC_DIR" ]; then
+                            cd ~ && cd "$AZTEC_DIR" && docker compose up -d
+                            echo -e "${GREEN}Aztec Sequencer started!${NC}"
+                        else
+                            echo -e "${RED}Aztec Sequencer not set up yet.${NC}"
+                        fi
+                        ;;
+                    2)
+                        if [ -d "$AZTEC_DIR" ]; then
+                            cd ~ && cd "$AZTEC_DIR" && docker compose down
+                            echo -e "${GREEN}Aztec Sequencer stopped!${NC}"
+                        fi
+                        ;;
+                    3)
+                        if [ -d "$AZTEC_DIR" ]; then
+                            cd ~ && cd "$AZTEC_DIR" && docker compose down && docker compose up -d
+                            echo -e "${GREEN}Aztec Sequencer restarted!${NC}"
+                        fi
+                        ;;
+                    0)
+                        continue
+                        ;;
+                    *)
+                        echo -e "${RED}Invalid choice!${NC}"
+                        ;;
+                esac
+                ;;
+            4)
+                echo -e "\n${BLUE}Manage All Services:${NC}"
+                echo "1) Start All Services"
+                echo "2) Stop All Services"
+                echo "3) Restart All Services"
+                echo "0) Back"
+                
+                read -p "Enter your choice: " all_choice
+                
+                case $all_choice in
+                    1)
+                        # Start Geth and Beacon
+                        if [ -f "$DOCKER_COMPOSE_FILE" ]; then
+                            cd ~ && cd "$NODE_DIR" && docker compose up -d
+                            echo -e "${GREEN}Geth and Beacon Node started!${NC}"
+                        fi
+                        # Start Aztec
+                        if [ -d "$AZTEC_DIR" ]; then
+                            cd ~ && cd "$AZTEC_DIR" && docker compose up -d
+                            echo -e "${GREEN}Aztec Sequencer started!${NC}"
+                        fi
+                        ;;
+                    2)
+                        # Stop Aztec first
+                        if [ -d "$AZTEC_DIR" ]; then
+                            cd ~ && cd "$AZTEC_DIR" && docker compose down
+                            echo -e "${GREEN}Aztec Sequencer stopped!${NC}"
+                        fi
+                        # Stop Geth and Beacon
+                        if [ -f "$DOCKER_COMPOSE_FILE" ]; then
+                            cd ~ && cd "$NODE_DIR" && docker compose down
+                            echo -e "${GREEN}Geth and Beacon Node stopped!${NC}"
+                        fi
+                        ;;
+                    3)
+                        # Restart Aztec
+                        if [ -d "$AZTEC_DIR" ]; then
+                            cd ~ && cd "$AZTEC_DIR" && docker compose down && docker compose up -d
+                            echo -e "${GREEN}Aztec Sequencer restarted!${NC}"
+                        fi
+                        # Restart Geth and Beacon
+                        if [ -f "$DOCKER_COMPOSE_FILE" ]; then
+                            cd ~ && cd "$NODE_DIR" && docker compose down && docker compose up -d
+                            echo -e "${GREEN}Geth and Beacon Node restarted!${NC}"
+                        fi
+                        ;;
+                    0)
+                        continue
+                        ;;
+                    *)
+                        echo -e "${RED}Invalid choice!${NC}"
+                        ;;
+                esac
+                ;;
+            0)
+                return
+                ;;
+            *)
+                echo -e "${RED}Invalid choice!${NC}"
+                ;;
+        esac
+        
+        read -p "Press Enter to continue..."
+    done
+}
+
 # Main loop
 while true; do
     if [ "$FIRST_RUN" = "true" ]; then
@@ -1060,6 +1254,9 @@ while true; do
             ;;
         11)
             configure_firewall
+            ;;
+        12)
+            manage_services
             ;;
         99)
             factory_reset
