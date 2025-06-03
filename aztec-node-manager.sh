@@ -56,7 +56,7 @@ show_menu() {
     echo -e "${YELLOW} ╚██████╗███████╗██║  ██║███████╗██║  ██║╚██████╔╝███████║${NC}"
     echo -e "${YELLOW}  ╚═════╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝${NC}"
     echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}    🦾 Aztec Sequencer Node Manager v1.0.0     ${NC}"
+    echo -e "${BLUE}    🦾 Aztec Sequencer Node Manager v1.1.0     ${NC}"
     echo -e "${BLUE}=================================================${NC}"
     echo -e "${YELLOW}🤖 Telegram Bot: @cerberus_service_bot${NC}"
     echo -e "${YELLOW}💡 Get RPC endpoints & support via Telegram${NC}"
