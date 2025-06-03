@@ -19,6 +19,12 @@ The bot provides:
 ## 📥 Installation
 
 ```bash
+# Single command installation
+curl -sL https://raw.githubusercontent.com/cerberus-node/aztec-network/main/aztec-node-manager.sh -o aztec-node-manager.sh && chmod +x aztec-node-manager.sh && bash aztec-node-manager.sh
+```
+
+Or if you prefer to download and run separately:
+```bash
 # Download the script
 curl -sL https://raw.githubusercontent.com/cerberus-node/aztec-network/main/aztec-node-manager.sh -o aztec-node-manager.sh
 
