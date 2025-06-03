@@ -1240,7 +1240,7 @@ export_peer_id() {
                     echo "$PEER_ID" | xclip -selection clipboard
                     echo -e "${GREEN}📋 Peer ID copied to clipboard${NC}"
                 fi
-                
+                echo -e "${GREEN} Verify the peer ID on https://aztec.nethermind.io ${NC}"
                 # Save to file
                 echo "$PEER_ID" > "$AZTEC_DIR/peer_id.txt"
                 echo -e "${GREEN}💾 Peer ID saved to $AZTEC_DIR/peer_id.txt${NC}"
