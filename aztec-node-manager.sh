@@ -1213,7 +1213,6 @@ manage_services() {
 
 # Function to show Aztec Sequencer peer ID
 export_peer_id() {
-    echo -e "\n${BLUE}Aztec Sequencer Peer ID:${NC}"
     if [ -d "$AZTEC_DIR" ]; then
         # Check if Aztec node is running
         if docker ps | grep -q "aztec-sequencer"; then
