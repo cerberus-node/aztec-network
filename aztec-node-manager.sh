@@ -607,6 +607,40 @@ upgrade_sequencer() {
         read -p "Press Enter to continue..."
         return
     fi
+
+    # Ask about data cleanup
+    echo -e "\n${YELLOW}Data Management Options:${NC}"
+    echo "1) Keep existing data (Recommended for minor updates)"
+    echo "2) Clear all data (Recommended for major version changes)"
+    echo "0) Cancel upgrade"
+    
+    read -p "Select data management option: " data_choice
+    
+    case $data_choice in
+        1)
+            echo -e "${GREEN}Keeping existing data...${NC}"
+            ;;
+        2)
+            echo -e "${RED}WARNING: This will delete all Aztec node data!${NC}"
+            read -p "Are you sure you want to proceed? (y/N): " confirm
+            if [[ ! $confirm =~ ^[Yy]$ ]]; then
+                echo -e "${YELLOW}Upgrade cancelled.${NC}"
+                return
+            fi
+            echo -e "${YELLOW}Clearing Aztec node data...${NC}"
+            cd ~ && cd "$AZTEC_DIR" && docker compose down
+            cd ~ && cd "$AZTEC_DIR" && rm -rf data/*
+            echo -e "${GREEN}Data cleared successfully.${NC}"
+            ;;
+        0)
+            echo -e "${YELLOW}Upgrade cancelled.${NC}"
+            return
+            ;;
+        *)
+            echo -e "${RED}Invalid choice. Upgrade cancelled.${NC}"
+            return
+            ;;
+    esac
     
     # Paginated tag selection
     TAGS_URL="https://registry.hub.docker.com/v2/repositories/aztecprotocol/aztec/tags?page_size=20"
