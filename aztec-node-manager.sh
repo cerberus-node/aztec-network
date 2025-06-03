@@ -73,6 +73,7 @@ show_menu() {
     echo -e "[10] Manage Environment Variables"
     echo -e "[11] Configure Firewall"
     echo -e "[12] Manage Services (Start/Stop/Restart)"
+    echo -e "[13] Show Aztec Peer ID (from logs)"
     echo -e "[99] Factory Reset (DANGER)"
     echo -e "[0] Exit"
     echo -e "${BLUE}-------------------------------------------------${NC}"
@@ -1210,6 +1211,69 @@ manage_services() {
     done
 }
 
+# Function to show Aztec Sequencer peer ID
+export_peer_id() {
+    echo -e "\n${BLUE}Aztec Sequencer Peer ID:${NC}"
+    if [ -d "$AZTEC_DIR" ]; then
+        # Check if Aztec node is running
+        if docker ps | grep -q "aztec-sequencer"; then
+            # Try multiple patterns to find peer ID
+            echo -e "${YELLOW}Searching for peer ID in logs...${NC}"
+            
+            # Pattern 1: JSON format with "peerId"
+            PEER_ID=$(docker logs aztec-sequencer 2>&1 | grep -i "peerId" | grep -o '"peerId":"[^"]*"' | cut -d'"' -f4 | head -n 1)
+        
+            
+            # Pattern 4: Plain text format with "peerId:"
+            if [ -z "$PEER_ID" ]; then
+                PEER_ID=$(docker logs aztec-sequencer 2>&1 | grep -i "peerId:" | grep -oP '(?<=peerId: )[^ ]*' | head -n 1)
+            fi
+            
+            if [ ! -z "$PEER_ID" ]; then
+                echo -e "${GREEN}✅ Peer ID found:${NC}"
+                echo "$PEER_ID"
+                
+                # Save to clipboard if possible
+                if command -v pbcopy &> /dev/null; then
+                    echo "$PEER_ID" | pbcopy
+                    echo -e "${GREEN}📋 Peer ID copied to clipboard${NC}"
+                elif command -v xclip &> /dev/null; then
+                    echo "$PEER_ID" | xclip -selection clipboard
+                    echo -e "${GREEN}📋 Peer ID copied to clipboard${NC}"
+                fi
+                
+                # Save to file
+                echo "$PEER_ID" > "$AZTEC_DIR/peer_id.txt"
+                echo -e "${GREEN}💾 Peer ID saved to $AZTEC_DIR/peer_id.txt${NC}"
+            else
+                echo -e "${RED}❌ Failed to find peer ID in logs.${NC}"
+                echo -e "${YELLOW}Possible reasons:${NC}"
+                echo "1. Node is still starting up"
+                echo "2. Node logs have been rotated"
+                echo "3. Different log format"
+                echo -e "\n${YELLOW}Suggestions:${NC}"
+                echo "1. Wait a few minutes and try again"
+                echo "2. Restart the node to see startup logs"
+                echo "3. Check logs manually: docker logs aztec-sequencer"
+            fi
+        else
+            echo -e "${RED}❌ Aztec Sequencer node is not running.${NC}"
+            echo -e "${YELLOW}Please start the node first:${NC}"
+            echo "1. Go to main menu"
+            echo "2. Select option 12 (Manage Services)"
+            echo "3. Choose option 3 (Manage Aztec Sequencer)"
+            echo "4. Select option 1 (Start Aztec Sequencer)"
+        fi
+    else
+        echo -e "${RED}❌ Aztec Sequencer not set up yet.${NC}"
+        echo -e "${YELLOW}Please set up the sequencer first:${NC}"
+        echo "1. Go to main menu"
+        echo "2. Select option 2 (Setup Aztec Sequencer)"
+    fi
+    
+    read -p "Press Enter to continue..."
+}
+
 # Main loop
 while true; do
     if [ "$FIRST_RUN" = "true" ]; then
@@ -1257,6 +1321,9 @@ while true; do
             ;;
         12)
             manage_services
+            ;;
+        13)
+            export_peer_id
             ;;
         99)
             factory_reset
