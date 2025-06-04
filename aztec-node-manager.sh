@@ -103,9 +103,32 @@ show_welcome() {
 
 # Function to check if Docker is installed
 check_docker() {
-    if ! command -v docker &> /dev/null; then
-        echo -e "${RED}Docker is not installed. Please install Docker first.${NC}"
-        exit 1
+    if ! command -v docker &> /dev/null || ! command -v docker compose &> /dev/null; then
+        echo -e "${YELLOW}Docker or Docker Compose not found. Installing Docker...${NC}"
+        
+        # Remove old Docker packages
+        for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do
+            sudo apt-get remove -y $pkg || true
+        done
+        
+        # Install Docker
+        sudo install -m 0755 -d /etc/apt/keyrings
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+        sudo chmod a+r /etc/apt/keyrings/docker.gpg
+        
+        echo \
+          "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+          https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo \"$VERSION_CODENAME\") stable" | \
+          sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        
+        sudo apt update
+        sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+        sudo docker run hello-world
+        sudo systemctl enable docker && sudo systemctl restart docker
+        
+        echo -e "${GREEN}Docker installed successfully!${NC}"
+    else
+        echo -e "${GREEN}Docker and Docker Compose are already installed.${NC}"
     fi
 }
 
@@ -179,10 +202,6 @@ setup_eth_node() {
     setup_firewall_ports "beacon"
 
     # Save RPC and Beacon URLs for later use
-    local rpc_url="http://localhost:8545"
-    local beacon_url="http://localhost:5052"
-    save_config "ETH_RPC_URL" "$rpc_url"
-    save_config "ETH_BEACON_URL" "$beacon_url"
     
     echo -e "${GREEN}Geth + Beacon Node setup completed!${NC}"
     echo -e "${GREEN}RPC URL: $rpc_url${NC}"
