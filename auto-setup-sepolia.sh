@@ -126,7 +126,7 @@ if [ "$BEACON" = "prysm" ]; then
       --datadir=/data
       --sepolia
       --execution-endpoint=http://geth:8551
-      --jwt-secret=/root/jwt.hex
+      --execution-jwt=/root/jwt.hex
       --genesis-beacon-api-url=https://lodestar-sepolia.chainsafe.io
       --checkpoint-sync-url=https://sepolia.checkpoint-sync.ethpandaops.io
       --accept-terms-of-use
