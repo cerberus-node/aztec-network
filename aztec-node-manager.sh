@@ -74,6 +74,7 @@ show_menu() {
     echo -e "[11] Configure Firewall"
     echo -e "[12] Manage Services (Start/Stop/Restart)"
     echo -e "[13] Show Aztec Peer ID (from logs)"
+    echo -e "[14] Aztec Auto Restart"
     echo -e "[99] Factory Reset (DANGER)"
     echo -e "[0] Exit"
     echo -e "${BLUE}-------------------------------------------------${NC}"
@@ -189,7 +190,10 @@ setup_eth_node() {
     
     # Create directory if it doesn't exist
     mkdir -p "$NODE_DIR"
-    
+    # Configure firewall for Geth and Beacon
+    setup_firewall_ports "geth"
+    setup_firewall_ports "beacon"
+
     # Download setup script
     curl -sL https://raw.githubusercontent.com/cerberus-node/aztec-network/refs/heads/main/auto-setup-sepolia.sh -o "$NODE_DIR/auto-setup-sepolia.sh"
     chmod +x "$NODE_DIR/auto-setup-sepolia.sh"
@@ -197,15 +201,9 @@ setup_eth_node() {
     # Run setup script
     cd "$NODE_DIR" && ./auto-setup-sepolia.sh
 
-    # Configure firewall for Geth and Beacon
-    setup_firewall_ports "geth"
-    setup_firewall_ports "beacon"
-
     # Save RPC and Beacon URLs for later use
     
     echo -e "${GREEN}Geth + Beacon Node setup completed!${NC}"
-    echo -e "${GREEN}RPC URL: $rpc_url${NC}"
-    echo -e "${GREEN}Beacon URL: $beacon_url${NC}"
     read -p "Press Enter to continue..."
 }
 
@@ -1326,6 +1324,87 @@ export_peer_id() {
     read -p "Press Enter to continue..."
 }
 
+# Function to monitor Aztec node health and auto-restart if needed
+monitor_aztec_health() {
+    local interval=60 # seconds
+    local max_fail=3
+    local fail_count=0
+    local aztec_dir="$AZTEC_DIR"
+    local log_file="$aztec_dir/health_monitor.log"
+    echo -e "${YELLOW}Starting Aztec node health monitor (interval: ${interval}s, max fail: $max_fail)...${NC}"
+    echo "[INFO] Health monitor started at $(date)" >> "$log_file"
+    while true; do
+        # Check if container exists and is running
+        if ! docker ps | grep -q "aztec-sequencer"; then
+            fail_count=$((fail_count+1))
+            echo -e "${RED}Aztec node container not running ($fail_count/$max_fail) at $(date)${NC}"
+            echo "[WARN] Container not running at $(date) ($fail_count/$max_fail)" >> "$log_file"
+        else
+            # Check container status
+            local container_status=$(docker inspect -f '{{.State.Status}}' aztec-sequencer 2>/dev/null)
+            if [ "$container_status" != "running" ]; then
+                fail_count=$((fail_count+1))
+                echo -e "${RED}Aztec node container not healthy - status: $container_status ($fail_count/$max_fail) at $(date)${NC}"
+                echo "[WARN] Container not healthy at $(date) - status: $container_status ($fail_count/$max_fail)" >> "$log_file"
+            else
+                fail_count=0
+                echo -e "${GREEN}Aztec node container healthy at $(date)${NC}"
+                echo "[OK] Container healthy at $(date)" >> "$log_file"
+            fi
+        fi
+        if [ "$fail_count" -ge "$max_fail" ]; then
+            echo -e "${RED}Aztec node unhealthy for $max_fail checks. Restarting...${NC}"
+            echo "[ACTION] Restarting node at $(date)" >> "$log_file"
+            cd ~ && cd "$aztec_dir" && docker compose down && docker compose up -d
+            fail_count=0
+            echo -e "${GREEN}Restarted Aztec node at $(date)${NC}"
+            echo "[INFO] Node restarted at $(date)" >> "$log_file"
+        fi
+        sleep $interval
+    done
+}
+
+# Function to start/stop health monitor in background
+manage_aztec_health_monitor() {
+    local monitor_pid_file="$AZTEC_DIR/.health_monitor.pid"
+    while true; do
+        echo -e "\n${BLUE}Aztec Node Health Monitor:${NC}"
+        echo "1) Start auto restart node (background)"
+        echo "2) Stop auto restart node"
+        echo "3) Show monitor log"
+        echo "0) Back to main menu"
+        read -p "Enter your choice: " hmon_choice
+        case $hmon_choice in
+            1)
+                if [ -f "$monitor_pid_file" ] && kill -0 $(cat "$monitor_pid_file") 2>/dev/null; then
+                    echo -e "${YELLOW}Health monitor is already running (PID: $(cat $monitor_pid_file))${NC}"
+                else
+                    nohup bash -c 'monitor_aztec_health' &> "$AZTEC_DIR/health_monitor.log" &
+                    echo $! > "$monitor_pid_file"
+                    echo -e "${GREEN}Health monitor started in background (PID: $!)${NC}"
+                fi
+                ;;
+            2)
+                if [ -f "$monitor_pid_file" ] && kill -0 $(cat "$monitor_pid_file") 2>/dev/null; then
+                    kill $(cat "$monitor_pid_file") && rm -f "$monitor_pid_file"
+                    echo -e "${GREEN}Health monitor stopped.${NC}"
+                else
+                    echo -e "${YELLOW}No health monitor running.${NC}"
+                fi
+                ;;
+            3)
+                less +G "$AZTEC_DIR/health_monitor.log"
+                ;;
+            0)
+                return
+                ;;
+            *)
+                echo -e "${RED}Invalid choice!${NC}"
+                ;;
+        esac
+    done
+}
+
 # Main loop
 while true; do
     if [ "$FIRST_RUN" = "true" ]; then
@@ -1376,6 +1455,9 @@ while true; do
             ;;
         13)
             export_peer_id
+            ;;
+        14)
+            manage_aztec_health_monitor
             ;;
         99)
             factory_reset
