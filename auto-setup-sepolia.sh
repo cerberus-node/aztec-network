@@ -116,7 +116,7 @@ if [ "$BEACON" = "prysm" ]; then
     restart: unless-stopped
     volumes:
       - $BEACON_VOLUME:/data
-      - $JWT_FILE:/data/jwt.hex
+      - $JWT_FILE:/root/jwt.hex
     depends_on:
       - geth
     ports:
@@ -126,7 +126,7 @@ if [ "$BEACON" = "prysm" ]; then
       --datadir=/data
       --sepolia
       --execution-endpoint=http://geth:8551
-      --jwt-secret=/data/jwt.hex
+      --jwt-secret=/root/jwt.hex
       --genesis-beacon-api-url=https://lodestar-sepolia.chainsafe.io
       --checkpoint-sync-url=https://sepolia.checkpoint-sync.ethpandaops.io
       --accept-terms-of-use
