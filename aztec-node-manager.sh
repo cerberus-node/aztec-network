@@ -193,7 +193,7 @@ setup_eth_node() {
     # Configure firewall for Geth and Beacon
     setup_firewall_ports "geth"
     setup_firewall_ports "beacon"
-
+  
     # Download setup script
     curl -sL https://raw.githubusercontent.com/cerberus-node/aztec-network/refs/heads/main/auto-setup-sepolia.sh -o "$NODE_DIR/auto-setup-sepolia.sh"
     chmod +x "$NODE_DIR/auto-setup-sepolia.sh"
@@ -201,9 +201,26 @@ setup_eth_node() {
     # Run setup script
     cd "$NODE_DIR" && ./auto-setup-sepolia.sh
 
-    # Save RPC and Beacon URLs for later use
-    
+    # Get beacon client from docker-compose.yml
+    local beacon_client
+    if grep -q "prysm:" "$NODE_DIR/docker-compose.yml"; then
+        beacon_client="prysm"
+    else
+        beacon_client="lighthouse"
+    fi
+
+    PUBLIC_IP=$(curl -s ipv4.icanhazip.com)
+
     echo -e "${GREEN}Geth + Beacon Node setup completed!${NC}"
+    echo -e "${YELLOW}RPC:${NC} http://localhost:8545"
+    echo -e "${YELLOW}RPC:${NC} http://${PUBLIC_IP}:8545"
+    if [ "$beacon_client" = "prysm" ]; then
+        echo -e "${YELLOW}Beacon:${NC} http://localhost:3500"
+        echo -e "${YELLOW}Beacon:${NC} http://${PUBLIC_IP}:3500"
+    else
+        echo -e "${YELLOW}Beacon:${NC} http://localhost:5052"
+         echo -e "${YELLOW}Beacon:${NC} http://${PUBLIC_IP}:5052"
+    fi
     read -p "Press Enter to continue..."
 }
 
