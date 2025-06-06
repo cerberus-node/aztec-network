@@ -5,15 +5,59 @@
 
 set -e
 
+# === CONFIG ===
+DATA_DIR="$HOME/sepolia-node"
+GETH_DIR="$DATA_DIR/geth"
+JWT_FILE="$DATA_DIR/jwt.hex"
+COMPOSE_FILE="$DATA_DIR/docker-compose.yml"
+
+# Check if node is already running and get current beacon client
+CURRENT_BEACON=""
+if [ -f "$COMPOSE_FILE" ]; then
+    if grep -q "prysm:" "$COMPOSE_FILE"; then
+        CURRENT_BEACON="prysm"
+    elif grep -q "lighthouse:" "$COMPOSE_FILE"; then
+        CURRENT_BEACON="lighthouse"
+    fi
+fi
+
 # === CHOOSE BEACON CLIENT ===
 echo ">>> Choose beacon client to use:"
 echo "1) Prysm"
 echo "2) Lighthouse"
+if [ ! -z "$CURRENT_BEACON" ]; then
+    echo -e "\nCurrent beacon client: $CURRENT_BEACON"
+fi
 read -rp "Enter choice [1 or 2]: " BEACON_CHOICE
 
 if [[ "$BEACON_CHOICE" != "1" && "$BEACON_CHOICE" != "2" ]]; then
   echo "❌ Invalid choice. Exiting."
   exit 1
+fi
+
+# Set new beacon client
+if [ "$BEACON_CHOICE" = "1" ]; then
+  NEW_BEACON="prysm"
+  BEACON_VOLUME="$DATA_DIR/prysm"
+else
+  NEW_BEACON="lighthouse"
+  BEACON_VOLUME="$DATA_DIR/lighthouse"
+fi
+
+# Clean up old data if beacon client changed
+if [ ! -z "$CURRENT_BEACON" ] && [ "$CURRENT_BEACON" != "$NEW_BEACON" ]; then
+    echo ">>> Beacon client changed from $CURRENT_BEACON to $NEW_BEACON"
+    echo ">>> Cleaning up old data..."
+    
+    # Stop containers
+    cd "$DATA_DIR" && docker compose down || true
+    
+    # Remove old beacon data
+    if [ "$CURRENT_BEACON" = "prysm" ]; then
+        rm -rf "$DATA_DIR/prysm"
+    elif [ "$CURRENT_BEACON" = "lighthouse" ]; then
+        rm -rf "$DATA_DIR/lighthouse"
+    fi
 fi
 
 # === DEPENDENCY CHECK ===
@@ -60,20 +104,8 @@ install_if_missing curl curl
 install_if_missing openssl openssl
 install_if_missing jq jq
 
-# === CONFIG ===
-DATA_DIR="$HOME/sepolia-node"
-GETH_DIR="$DATA_DIR/geth"
-JWT_FILE="$DATA_DIR/jwt.hex"
-COMPOSE_FILE="$DATA_DIR/docker-compose.yml"
+# Create directories
 mkdir -p "$GETH_DIR"
-
-if [ "$BEACON_CHOICE" = "1" ]; then
-  BEACON="prysm"
-  BEACON_VOLUME="$DATA_DIR/prysm"
-else
-  BEACON="lighthouse"
-  BEACON_VOLUME="$DATA_DIR/lighthouse"
-fi
 mkdir -p "$BEACON_VOLUME"
 
 # === GENERATE JWT SECRET ===
@@ -107,7 +139,7 @@ services:
       --http.vhosts=*
 EOF
 
-if [ "$BEACON" = "prysm" ]; then
+if [ "$NEW_BEACON" = "prysm" ]; then
   cat >> "$COMPOSE_FILE" <<EOF
 
   prysm:
@@ -161,7 +193,7 @@ EOF
 fi
 
 # === START DOCKER ===
-echo ">>> Starting Sepolia node with $BEACON..."
+echo ">>> Starting Sepolia node with $NEW_BEACON..."
 cd "$DATA_DIR"
 docker compose up -d
 

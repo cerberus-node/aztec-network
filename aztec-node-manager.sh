@@ -191,16 +191,6 @@ setup_eth_node() {
     # Create directory if it doesn't exist
     mkdir -p "$NODE_DIR"
 
-    # Check if node is already running and get current beacon client
-    local current_beacon=""
-    if [ -f "$NODE_DIR/docker-compose.yml" ]; then
-        if grep -q "prysm:" "$NODE_DIR/docker-compose.yml"; then
-            current_beacon="prysm"
-        elif grep -q "lighthouse:" "$NODE_DIR/docker-compose.yml"; then
-            current_beacon="lighthouse"
-        fi
-    fi
-
     # Configure firewall for Geth and Beacon
     setup_firewall_ports "geth"
     setup_firewall_ports "beacon"
@@ -209,37 +199,23 @@ setup_eth_node() {
     curl -sL https://raw.githubusercontent.com/cerberus-node/aztec-network/refs/heads/main/auto-setup-sepolia.sh -o "$NODE_DIR/auto-setup-sepolia.sh"
     chmod +x "$NODE_DIR/auto-setup-sepolia.sh"
     
-        # Get new beacon client
-    local new_beacon=""
-    if grep -q "prysm:" "$NODE_DIR/docker-compose.yml"; then
-        new_beacon="prysm"
-    else
-        new_beacon="lighthouse"
-    fi
-
-    # If beacon client changed, delete old data
-    if [ ! -z "$current_beacon" ] && [ "$current_beacon" != "$new_beacon" ]; then
-        echo -e "${YELLOW}Beacon client changed from $current_beacon to $new_beacon. Cleaning up old data...${NC}"
-        if [ "$current_beacon" = "prysm" ]; then
-            echo -e "${YELLOW}Removing Prysm data...${NC}"
-            cd "$NODE_DIR" && docker compose down
-            rm -rf "$NODE_DIR/prysm"
-        elif [ "$current_beacon" = "lighthouse" ]; then
-            echo -e "${YELLOW}Removing Lighthouse data...${NC}"
-            cd "$NODE_DIR" && docker compose down
-            rm -rf "$NODE_DIR/lighthouse"
-        fi
-    fi
-    
     # Run setup script
     cd "$NODE_DIR" && ./auto-setup-sepolia.sh
+
+    # Get beacon client for displaying endpoints
+    local beacon=""
+    if grep -q "prysm:" "$NODE_DIR/docker-compose.yml"; then
+        beacon="prysm"
+    else
+        beacon="lighthouse"
+    fi
 
     PUBLIC_IP=$(curl -s ipv4.icanhazip.com)
 
     echo -e "${GREEN}Geth + Beacon Node setup completed!${NC}"
     echo -e "${YELLOW}Local RPC:${NC} http://localhost:8545"
     echo -e "${YELLOW}Public RPC:${NC} http://${PUBLIC_IP}:8545"
-    if [ "$new_beacon" = "prysm" ]; then
+    if [ "$beacon" = "prysm" ]; then
         echo -e "${YELLOW}Local Beacon:${NC} http://localhost:3500"
         echo -e "${YELLOW}Public Beacon:${NC} http://${PUBLIC_IP}:3500"
     else
