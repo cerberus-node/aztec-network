@@ -209,10 +209,7 @@ setup_eth_node() {
     curl -sL https://raw.githubusercontent.com/cerberus-node/aztec-network/refs/heads/main/auto-setup-sepolia.sh -o "$NODE_DIR/auto-setup-sepolia.sh"
     chmod +x "$NODE_DIR/auto-setup-sepolia.sh"
     
-    # Run setup script
-    cd "$NODE_DIR" && ./auto-setup-sepolia.sh
-
-    # Get new beacon client
+        # Get new beacon client
     local new_beacon=""
     if grep -q "prysm:" "$NODE_DIR/docker-compose.yml"; then
         new_beacon="prysm"
@@ -224,11 +221,18 @@ setup_eth_node() {
     if [ ! -z "$current_beacon" ] && [ "$current_beacon" != "$new_beacon" ]; then
         echo -e "${YELLOW}Beacon client changed from $current_beacon to $new_beacon. Cleaning up old data...${NC}"
         if [ "$current_beacon" = "prysm" ]; then
+            echo -e "${YELLOW}Removing Prysm data...${NC}"
+            cd "$NODE_DIR" && docker compose down
             rm -rf "$NODE_DIR/prysm"
         elif [ "$current_beacon" = "lighthouse" ]; then
+            echo -e "${YELLOW}Removing Lighthouse data...${NC}"
+            cd "$NODE_DIR" && docker compose down
             rm -rf "$NODE_DIR/lighthouse"
         fi
     fi
+    
+    # Run setup script
+    cd "$NODE_DIR" && ./auto-setup-sepolia.sh
 
     PUBLIC_IP=$(curl -s ipv4.icanhazip.com)
 
