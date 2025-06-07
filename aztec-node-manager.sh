@@ -200,7 +200,15 @@ setup_eth_node() {
     chmod +x "$NODE_DIR/auto-setup-sepolia.sh"
     
     # Run setup script
+    echo -e "${YELLOW}Running setup script...${NC}"
     cd "$NODE_DIR" && ./auto-setup-sepolia.sh
+    
+    # Check if setup was successful
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}Setup failed! Please check the logs above for errors.${NC}"
+        read -p "Press Enter to continue..."
+        return 1
+    fi
 
     # Get beacon client for displaying endpoints
     local beacon=""
@@ -208,6 +216,24 @@ setup_eth_node() {
         beacon="prysm"
     else
         beacon="lighthouse"
+    fi
+
+    # Verify services are running
+    echo -e "${YELLOW}Verifying services...${NC}"
+    if ! docker ps | grep -q "geth"; then
+        echo -e "${RED}Geth is not running!${NC}"
+        read -p "Press Enter to continue..."
+        return 1
+    fi
+    
+    if [ "$beacon" = "prysm" ] && ! docker ps | grep -q "prysm"; then
+        echo -e "${RED}Prysm beacon client is not running!${NC}"
+        read -p "Press Enter to continue..."
+        return 1
+    elif [ "$beacon" = "lighthouse" ] && ! docker ps | grep -q "lighthouse"; then
+        echo -e "${RED}Lighthouse beacon client is not running!${NC}"
+        read -p "Press Enter to continue..."
+        return 1
     fi
 
     PUBLIC_IP=$(curl -s ipv4.icanhazip.com)
@@ -222,6 +248,30 @@ setup_eth_node() {
         echo -e "${YELLOW}Local Beacon:${NC} http://localhost:5052"
         echo -e "${YELLOW}Public Beacon:${NC} http://${PUBLIC_IP}:5052"
     fi
+    
+    echo -e "\n${YELLOW}Checking node status...${NC}"
+    if curl -s -X POST http://localhost:8545 \
+        -H "Content-Type: application/json" \
+        -d '{"jsonrpc":"2.0","method":"eth_syncing","params":[],"id":1}' | grep -q "false"; then
+        echo -e "${GREEN}Geth is fully synced!${NC}"
+    else
+        echo -e "${YELLOW}Geth is still syncing...${NC}"
+    fi
+    
+    if [ "$beacon" = "prysm" ]; then
+        if curl -s http://localhost:3500/eth/v1/node/syncing | grep -q "false"; then
+            echo -e "${GREEN}Prysm beacon is fully synced!${NC}"
+        else
+            echo -e "${YELLOW}Prysm beacon is still syncing...${NC}"
+        fi
+    else
+        if curl -s http://localhost:5052/eth/v1/node/syncing | grep -q "false"; then
+            echo -e "${GREEN}Lighthouse beacon is fully synced!${NC}"
+        else
+            echo -e "${YELLOW}Lighthouse beacon is still syncing...${NC}"
+        fi
+    fi
+    
     read -p "Press Enter to continue..."
 }
 

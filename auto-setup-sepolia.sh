@@ -158,7 +158,7 @@ if [ "$NEW_BEACON" = "prysm" ]; then
       --datadir=/data
       --sepolia
       --execution-endpoint=http://geth:8551
-      --execution-jwt=/root/jwt.hex
+      --jwt-secret=/root/jwt.hex
       --genesis-beacon-api-url=https://lodestar-sepolia.chainsafe.io
       --checkpoint-sync-url=https://sepolia.checkpoint-sync.ethpandaops.io
       --accept-terms-of-use
@@ -194,6 +194,54 @@ fi
 
 # === START DOCKER ===
 echo ">>> Starting Sepolia node with $NEW_BEACON..."
+
+# Start Geth first and wait for it to be ready
+echo ">>> Starting Geth..."
 cd "$DATA_DIR"
+docker compose up -d geth
+
+# Wait for Geth to be ready
+echo ">>> Waiting for Geth to be ready..."
+while true; do
+    if curl -s -X POST http://localhost:8545 \
+        -H "Content-Type: application/json" \
+        -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' > /dev/null; then
+        echo ">>> Geth is ready!"
+        break
+    fi
+    echo ">>> Waiting for Geth to start..."
+    sleep 5
+done
+
+# Generate new JWT and update it in both containers
+echo ">>> Updating JWT secret..."
+openssl rand -hex 32 > "$JWT_FILE"
+
+# Start beacon client
+echo ">>> Starting $NEW_BEACON beacon client..."
 docker compose up -d
+
+# Wait for beacon client to be ready
+echo ">>> Waiting for beacon client to be ready..."
+if [ "$NEW_BEACON" = "prysm" ]; then
+    while true; do
+        if curl -s http://localhost:3500/eth/v1/node/syncing > /dev/null; then
+            echo ">>> Prysm beacon client is ready!"
+            break
+        fi
+        echo ">>> Waiting for Prysm to start..."
+        sleep 5
+    done
+else
+    while true; do
+        if curl -s http://localhost:5052/eth/v1/node/syncing > /dev/null; then
+            echo ">>> Lighthouse beacon client is ready!"
+            break
+        fi
+        echo ">>> Waiting for Lighthouse to start..."
+        sleep 5
+    done
+fi
+
+echo ">>> Setup completed successfully!"
 
