@@ -213,10 +213,6 @@ while true; do
     sleep 5
 done
 
-# Generate new JWT and update it in both containers
-echo ">>> Updating JWT secret..."
-openssl rand -hex 32 > "$JWT_FILE"
-
 # Start beacon client
 echo ">>> Starting $NEW_BEACON beacon client..."
 docker compose up -d
