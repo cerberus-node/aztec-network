@@ -520,7 +520,10 @@ check_status() {
 check_geth_status() {
     echo -e "\n${BLUE}Geth Status:${NC}"
     if [ -f "$DOCKER_COMPOSE_FILE" ]; then
-        RESPONSE=$(curl -s -X POST http://localhost:8545 \
+        read -p "Enter Geth RPC port (default: 8545): " GETH_PORT
+        GETH_PORT=${GETH_PORT:-8545}
+        
+        RESPONSE=$(curl -s -X POST http://localhost:$GETH_PORT \
             -H 'Content-Type: application/json' \
             -d '{"jsonrpc":"2.0","method":"eth_syncing","params":[],"id":1}')
         
@@ -541,8 +544,11 @@ check_geth_status() {
 check_beacon_status() {
     echo -e "\n${BLUE}Beacon Node Status:${NC}"
     if [ -f "$DOCKER_COMPOSE_FILE" ]; then
+        read -p "Enter Beacon API port (default: 5052): " BEACON_PORT
+        BEACON_PORT=${BEACON_PORT:-5052}
+        
         # Check syncing status
-        SYNC_RESPONSE=$(curl -s http://localhost:5052/eth/v1/node/syncing)
+        SYNC_RESPONSE=$(curl -s http://localhost:$BEACON_PORT/eth/v1/node/syncing)
         if [[ "$SYNC_RESPONSE" == *"false"* ]]; then
             echo -e "${GREEN}✅ Beacon node is fully synced!${NC}"
         elif [[ "$SYNC_RESPONSE" == *"true"* ]]; then
@@ -552,7 +558,7 @@ check_beacon_status() {
         fi
 
         # Check health status
-        HEALTH_RESPONSE=$(curl -s http://localhost:5052/eth/v1/node/health)
+        HEALTH_RESPONSE=$(curl -s http://localhost:$BEACON_PORT/eth/v1/node/health)
         if [[ "$HEALTH_RESPONSE" == *"200"* ]]; then
             echo -e "${GREEN}✅ Beacon node is healthy${NC}"
         else
@@ -565,7 +571,8 @@ check_beacon_status() {
 
 check_aztec_status() {
     echo -e "\n${BLUE}Aztec Sequencer Sync Status:${NC}"
-    LOCAL_AZTEC_PORT=8080
+    read -p "Enter Aztec RPC port (default: 8080): " LOCAL_AZTEC_PORT
+    LOCAL_AZTEC_PORT=${LOCAL_AZTEC_PORT:-8080}
     LOCAL_AZTEC_RPC="http://localhost:$LOCAL_AZTEC_PORT"
     REMOTE_AZTEC_API="https://aztec.denodes.app/api/info"
 
