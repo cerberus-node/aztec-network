@@ -556,14 +556,6 @@ check_beacon_status() {
         else
             echo -e "${RED}❌ Unable to determine Beacon sync status${NC}"
         fi
-
-        # Check health status
-        HEALTH_RESPONSE=$(curl -s http://localhost:$BEACON_PORT/eth/v1/node/health)
-        if [[ "$HEALTH_RESPONSE" == *"200"* ]]; then
-            echo -e "${GREEN}✅ Beacon node is healthy${NC}"
-        else
-            echo -e "${RED}❌ Beacon node health check failed${NC}"
-        fi
     else
         echo -e "${RED}ETH Node not set up yet.${NC}"
     fi
