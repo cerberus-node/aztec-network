@@ -488,64 +488,123 @@ view_logs() {
 
 # Function to check node status
 check_status() {
-    echo -e "${YELLOW}Checking node status (Sync Status & Endpoint Health)...${NC}"
+    echo -e "${YELLOW}Select service to check:${NC}"
+    echo "1) Geth Node"
+    echo "2) Beacon Node"
+    echo "3) Aztec Node"
+    echo "4) All Services"
+    read -p "Enter your choice (1-4): " choice
+
+    case $choice in
+        1)
+            check_geth_status
+            ;;
+        2)
+            check_beacon_status
+            ;;
+        3)
+            check_aztec_status
+            ;;
+        4)
+            check_all_services
+            ;;
+        *)
+            echo -e "${RED}Invalid choice. Please select 1-4${NC}"
+            return
+            ;;
+    esac
     
-    # Check Geth RPC Health & Sync Status
+    read -p "Press Enter to continue..."
+}
+
+check_geth_status() {
+    echo -e "\n${BLUE}Geth Status:${NC}"
     if [ -f "$DOCKER_COMPOSE_FILE" ]; then
-        echo -e "\n${BLUE}Geth Status:${NC}"
-        curl -s -X POST http://localhost:8545 \
+        RESPONSE=$(curl -s -X POST http://localhost:8545 \
             -H 'Content-Type: application/json' \
-            -d '{"jsonrpc":"2.0","method":"eth_syncing","params":[],"id":1}' | jq
+            -d '{"jsonrpc":"2.0","method":"eth_syncing","params":[],"id":1}')
         
-        echo -e "\n${BLUE}Beacon Node Status:${NC}"
-        curl -s http://localhost:5052/eth/v1/node/syncing | jq
-        curl -s http://localhost:5052/eth/v1/node/health | jq # Add Beacon Health check here
+        if [[ "$RESPONSE" == *"false"* ]]; then
+            echo -e "${GREEN}✅ Geth node is fully synced!${NC}"
+        elif [[ "$RESPONSE" == *"currentBlock"* ]]; then
+            CURRENT=$(echo "$RESPONSE" | jq -r '.result.currentBlock')
+            HIGHEST=$(echo "$RESPONSE" | jq -r '.result.highestBlock')
+            echo -e "${YELLOW}⏳ Geth node is syncing... ($CURRENT / $HIGHEST)${NC}"
+        else
+            echo -e "${RED}❌ Unable to determine Geth sync status${NC}"
+        fi
     else
         echo -e "${RED}ETH Node not set up yet.${NC}"
     fi
-    
-    # Check Aztec Sequencer sync status (block tips)
+}
+
+check_beacon_status() {
+    echo -e "\n${BLUE}Beacon Node Status:${NC}"
+    if [ -f "$DOCKER_COMPOSE_FILE" ]; then
+        # Check syncing status
+        SYNC_RESPONSE=$(curl -s http://localhost:5052/eth/v1/node/syncing)
+        if [[ "$SYNC_RESPONSE" == *"false"* ]]; then
+            echo -e "${GREEN}✅ Beacon node is fully synced!${NC}"
+        elif [[ "$SYNC_RESPONSE" == *"true"* ]]; then
+            echo -e "${YELLOW}⏳ Beacon node is still syncing${NC}"
+        else
+            echo -e "${RED}❌ Unable to determine Beacon sync status${NC}"
+        fi
+
+        # Check health status
+        HEALTH_RESPONSE=$(curl -s http://localhost:5052/eth/v1/node/health)
+        if [[ "$HEALTH_RESPONSE" == *"200"* ]]; then
+            echo -e "${GREEN}✅ Beacon node is healthy${NC}"
+        else
+            echo -e "${RED}❌ Beacon node health check failed${NC}"
+        fi
+    else
+        echo -e "${RED}ETH Node not set up yet.${NC}"
+    fi
+}
+
+check_aztec_status() {
     echo -e "\n${BLUE}Aztec Sequencer Sync Status:${NC}"
     LOCAL_AZTEC_PORT=8080
     LOCAL_AZTEC_RPC="http://localhost:$LOCAL_AZTEC_PORT"
-    REMOTE_AZTEC_RPC="https://aztec-rpc.cerberusnode.com"
+    REMOTE_AZTEC_API="https://aztec.denodes.app/api/info"
 
     # Check if local Aztec node is running
     if lsof -i :$LOCAL_AZTEC_PORT >/dev/null 2>&1; then
         LOCAL_RESPONSE=$(curl -s -m 5 -X POST -H 'Content-Type: application/json' \
             -d '{"jsonrpc":"2.0","method":"node_getL2Tips","params":[],"id":1}' "$LOCAL_AZTEC_RPC")
         if [ -z "$LOCAL_RESPONSE" ] || [[ "$LOCAL_RESPONSE" == *"error"* ]]; then
-            echo "❌ Local Aztec node not responding or returned an error. Please check if it's running on $LOCAL_AZTEC_RPC"
+            echo -e "${RED}❌ Local Aztec node not responding or returned an error${NC}"
             LOCAL_BLOCK="N/A"
         else
             LOCAL_BLOCK=$(echo "$LOCAL_RESPONSE" | jq -r ".result.proven.number")
         fi
     else
-        echo "⚠️ No Aztec node detected on port $LOCAL_AZTEC_PORT."
+        echo -e "${RED}❌ No Aztec node detected on port $LOCAL_AZTEC_PORT${NC}"
         LOCAL_BLOCK="N/A"
     fi
 
-    REMOTE_RESPONSE=$(curl -s -m 5 -X POST -H 'Content-Type: application/json' \
-        -d '{"jsonrpc":"2.0","method":"node_getL2Tips","params":[],"id":1}' "$REMOTE_AZTEC_RPC")
+    REMOTE_RESPONSE=$(curl -s -m 5 "$REMOTE_AZTEC_API")
     if [ -z "$REMOTE_RESPONSE" ] || [[ "$REMOTE_RESPONSE" == *"error"* ]]; then
-        echo "⚠️ Remote Aztec RPC ($REMOTE_AZTEC_RPC) not responding or returned an error."
+        echo -e "${RED}❌ Remote Aztec API not responding or returned an error${NC}"
         REMOTE_BLOCK="N/A"
     else
-        REMOTE_BLOCK=$(echo "$REMOTE_RESPONSE" | jq -r ".result.proven.number")
+        REMOTE_BLOCK=$(echo "$REMOTE_RESPONSE" | jq -r ".blockNumber")
     fi
-
-    echo "🧱 Local Aztec block:  $LOCAL_BLOCK"
-    echo "🌐 Remote Aztec block: $REMOTE_BLOCK"
 
     if [[ "$LOCAL_BLOCK" == "N/A" ]] || [[ "$REMOTE_BLOCK" == "N/A" ]]; then
-        echo "🚫 Cannot determine Aztec sync status due to an error in one of the RPC responses."
+        echo -e "${RED}❌ Cannot determine Aztec sync status due to an error${NC}"
     elif [ "$LOCAL_BLOCK" = "$REMOTE_BLOCK" ]; then
-        echo "✅ Aztec node is fully synced!"
+        echo -e "${GREEN}✅ Aztec node is fully synced! (Block: $LOCAL_BLOCK)${NC}"
     else
-        echo "⏳ Aztec node is still syncing... ($LOCAL_BLOCK / $REMOTE_BLOCK)"
+        echo -e "${YELLOW}⏳ Aztec node is still syncing... ($LOCAL_BLOCK / $REMOTE_BLOCK)${NC}"
     fi
-    
-    read -p "Press Enter to continue..."
+}
+
+check_all_services() {
+    check_geth_status
+    check_beacon_status
+    check_aztec_status
 }
 
 # Function to access shell
