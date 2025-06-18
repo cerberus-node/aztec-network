@@ -1,6 +1,6 @@
 #!/bin/bash
 
-REMOTE_RPC="https://aztec-rpc.cerberusnode.com"
+REMOTE_API="https://aztec.denodes.app/api/info"
 
 # Check if any app is running on port 8080
 if lsof -i :8080 >/dev/null 2>&1; then
@@ -27,21 +27,20 @@ while true; do
   fi
 
   # Check REMOTE node status
-  REMOTE_RESPONSE=$(curl -s -m 5 -X POST -H 'Content-Type: application/json' \
-    -d '{"jsonrpc":"2.0","method":"node_getL2Tips","params":[],"id":1}' "$REMOTE_RPC")
+  REMOTE_RESPONSE=$(curl -s -m 5 "$REMOTE_API")
 
   if [ -z "$REMOTE_RESPONSE" ] || [[ "$REMOTE_RESPONSE" == *"error"* ]]; then
-    echo "⚠️ Remote RPC ($REMOTE_RPC) not responding or returned an error."
+    echo "⚠️ Remote API ($REMOTE_API) not responding or returned an error."
     REMOTE="N/A"
   else
-    REMOTE=$(echo "$REMOTE_RESPONSE" | jq -r ".result.proven.number")
+    REMOTE=$(echo "$REMOTE_RESPONSE" | jq -r ".blockNumber")
   fi
 
   echo "🧱 Local block:  $LOCAL"
   echo "🌐 Remote block: $REMOTE"
 
   if [[ "$LOCAL" == "N/A" ]] || [[ "$REMOTE" == "N/A" ]]; then
-    echo "🚫 Cannot determine sync status due to an error in one of the RPC responses."
+    echo "🚫 Cannot determine sync status due to an error in one of the responses."
   elif [ "$LOCAL" = "$REMOTE" ]; then
     echo "✅ Your node is fully synced!"
   else
