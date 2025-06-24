@@ -21,7 +21,7 @@ NC='\033[0m' # No Color
 print_status() {
     local color=$1
     local message=$2
-    echo -e "${color}${message}${NC}"
+    echo -e "${color}${message}${NC}" >&2
 }
 
 # Function to handle graceful exit
@@ -121,7 +121,7 @@ get_remote_block() {
     
     if [ -n "$REMOTE_RESPONSE" ] && [[ "$REMOTE_RESPONSE" != *"error"* ]]; then
         local REMOTE_BLOCK=$(echo "$REMOTE_RESPONSE" | jq -r ".result.proven.number" 2>/dev/null)
-        if [[ "$REMOTE_BLOCK" != "null" ]] && [[ "$REMOTE_BLOCK" != "N/A" ]]; then
+        if [[ "$REMOTE_BLOCK" != "null" ]] && [[ "$REMOTE_BLOCK" != "N/A" ]] && [[ "$REMOTE_BLOCK" =~ ^[0-9]+$ ]]; then
             remote_source="RPC"
             echo "$REMOTE_BLOCK|$remote_source"
             return
@@ -131,7 +131,7 @@ get_remote_block() {
     # Try AztecScan API as fallback
     print_status $YELLOW "⚠️ RPC failed, trying AztecScan API fallback..."
     local REMOTE_BLOCK=$(get_latest_proven_block)
-    if [[ "$REMOTE_BLOCK" != "N/A" ]]; then
+    if [[ "$REMOTE_BLOCK" != "N/A" ]] && [[ "$REMOTE_BLOCK" =~ ^[0-9]+$ ]]; then
         remote_source="AztecScan"
         echo "$REMOTE_BLOCK|$remote_source"
         return
