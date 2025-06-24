@@ -561,12 +561,52 @@ check_beacon_status() {
     fi
 }
 
+# Function to get latest proven block from AztecScan API
+get_latest_proven_block() {
+    local API_KEY="temporary-api-key"
+    local API_URL="https://api.testnet.aztecscan.xyz/v1/$API_KEY/l2/ui/blocks-for-table"
+    local BATCH_SIZE=20
+    local FOUND=0
+
+    # Get latest block height
+    local LATEST_BLOCK=$(curl -s "$API_URL?from=0&to=0" | jq -r '.[0].height')
+    
+    if [ -z "$LATEST_BLOCK" ] || [ "$LATEST_BLOCK" == "null" ]; then
+        echo "N/A"
+        return
+    fi
+
+    local CURRENT_HEIGHT=$LATEST_BLOCK
+
+    # Search backwards for blockStatus = 4
+    while [ $FOUND -eq 0 ]; do
+        local FROM_HEIGHT=$((CURRENT_HEIGHT - BATCH_SIZE + 1))
+        if [ $FROM_HEIGHT -lt 0 ]; then
+            FROM_HEIGHT=0
+        fi
+
+        local RESPONSE=$(curl -s "$API_URL?from=$FROM_HEIGHT&to=$CURRENT_HEIGHT")
+        local MATCH=$(echo "$RESPONSE" | jq -r '.[] | select(.blockStatus == 4) | .height' | sort -nr | head -n1)
+
+        if [ -n "$MATCH" ] && [ "$MATCH" != "null" ]; then
+            echo "$MATCH"
+            return
+        else
+            CURRENT_HEIGHT=$((FROM_HEIGHT - 1))
+            if [ $CURRENT_HEIGHT -lt 0 ]; then
+                echo "N/A"
+                return
+            fi
+        fi
+    done
+}
+
 check_aztec_status() {
     echo -e "\n${BLUE}Aztec Sequencer Sync Status:${NC}"
     read -p "Enter Aztec RPC port (default: 8080): " LOCAL_AZTEC_PORT
     LOCAL_AZTEC_PORT=${LOCAL_AZTEC_PORT:-8080}
     LOCAL_AZTEC_RPC="http://localhost:$LOCAL_AZTEC_PORT"
-    REMOTE_AZTEC_API="https://aztec.denodes.app/api/info"
+    REMOTE_AZTEC_RPC="https://aztec-rpc.cerberusnode.com"
 
     # Check if local Aztec node is running
     if lsof -i :$LOCAL_AZTEC_PORT >/dev/null 2>&1; then
@@ -583,12 +623,20 @@ check_aztec_status() {
         LOCAL_BLOCK="N/A"
     fi
 
-    REMOTE_RESPONSE=$(curl -s -m 5 "$REMOTE_AZTEC_API")
+    # Try RPC first, then fallback to API
+    REMOTE_RESPONSE=$(curl -s -m 5 -X POST -H 'Content-Type: application/json' \
+        -d '{"jsonrpc":"2.0","method":"node_getL2Tips","params":[],"id":1}' "$REMOTE_AZTEC_RPC")
+    
     if [ -z "$REMOTE_RESPONSE" ] || [[ "$REMOTE_RESPONSE" == *"error"* ]]; then
-        echo -e "${RED}❌ Remote Aztec API not responding or returned an error${NC}"
-        REMOTE_BLOCK="N/A"
+        echo -e "${YELLOW}⚠️ Remote RPC failed, trying AztecScan API fallback...${NC}"
+        REMOTE_BLOCK=$(get_latest_proven_block)
+        if [ "$REMOTE_BLOCK" != "N/A" ]; then
+            echo -e "${GREEN}✅ Got block from AztecScan API: $REMOTE_BLOCK${NC}"
+        else
+            echo -e "${RED}❌ Both RPC and API fallback failed${NC}"
+        fi
     else
-        REMOTE_BLOCK=$(echo "$REMOTE_RESPONSE" | jq -r ".blockNumber")
+        REMOTE_BLOCK=$(echo "$REMOTE_RESPONSE" | jq -r ".result.proven.number")
     fi
 
     if [[ "$LOCAL_BLOCK" == "N/A" ]] || [[ "$REMOTE_BLOCK" == "N/A" ]]; then
