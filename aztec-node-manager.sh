@@ -299,8 +299,11 @@ setup_aztec_sequencer() {
     save_config "ETH_RPC_URL" "$ETHEREUM_HOSTS"
     save_config "ETH_BEACON_URL" "$L1_CONSENSUS_HOST_URLS"
     
-    read -p "🔑 Enter your Ethereum Private Key (0x...): " VALIDATOR_PRIVATE_KEY
+    read -p "🔑 Enter your Ethereum Private Key (0x...): " VALIDATOR_PRIVATE_KEYS
     read -p "🏦 Enter your Ethereum Address (0x...): " VALIDATOR_ADDRESS
+    
+    # Optional: SEQ_PUBLISHER_PRIVATE_KEY
+    read -p "🔑 Enter SEQ_PUBLISHER_PRIVATE_KEY (optional, press Enter to skip): " SEQ_PUBLISHER_PRIVATE_KEY
     
     P2P_IP=$(curl -s ipv4.icanhazip.com)
     echo "🌍 Detected Public IP: $P2P_IP"
@@ -335,9 +338,10 @@ setup_aztec_sequencer() {
     cat <<EOF > .env
 ETHEREUM_HOSTS=$ETHEREUM_HOSTS
 L1_CONSENSUS_HOST_URLS=$L1_CONSENSUS_HOST_URLS
-VALIDATOR_PRIVATE_KEY=$VALIDATOR_PRIVATE_KEY
+VALIDATOR_PRIVATE_KEYS=$VALIDATOR_PRIVATE_KEYS
 VALIDATOR_ADDRESS=$VALIDATOR_ADDRESS
 P2P_IP=$P2P_IP
+${SEQ_PUBLISHER_PRIVATE_KEY:+SEQ_PUBLISHER_PRIVATE_KEY=$SEQ_PUBLISHER_PRIVATE_KEY}
 EOF
     echo "✅ .env file created."
     
@@ -346,14 +350,15 @@ EOF
 services:
   aztec-node:
     container_name: aztec-sequencer
-    image: aztecprotocol/aztec:0.87.9
+    image: aztecprotocol/aztec:1.1.2
     restart: unless-stopped
     environment:
       ETHEREUM_HOSTS: \${ETHEREUM_HOSTS}
       L1_CONSENSUS_HOST_URLS: \${L1_CONSENSUS_HOST_URLS}
-      VALIDATOR_PRIVATE_KEY: \${VALIDATOR_PRIVATE_KEY}
+      VALIDATOR_PRIVATE_KEYS: \${VALIDATOR_PRIVATE_KEYS}
       P2P_IP: \${P2P_IP}
       LOG_LEVEL: debug
+      SEQ_PUBLISHER_PRIVATE_KEY: \${SEQ_PUBLISHER_PRIVATE_KEY:-}
     entrypoint: >
       sh -c 'node --no-warnings /usr/src/yarn-project/aztec/dest/bin/index.js start --network alpha-testnet --node --archiver --sequencer'
     ports:
@@ -1196,12 +1201,13 @@ manage_env() {
 # Required Environment Variables
 ETHEREUM_HOSTS=http://localhost:8545
 L1_CONSENSUS_HOST_URLS=http://localhost:5052
-VALIDATOR_PRIVATE_KEY=your_private_key_here
+VALIDATOR_PRIVATE_KEYS=your_private_key_here
 VALIDATOR_ADDRESS=your_validator_address_here
 P2P_IP=your_public_ip
 
 # Optional Configuration
 LOG_LEVEL=debug
+SEQ_PUBLISHER_PRIVATE_KEY=your_seq_publisher_private_key_here
 EOF
                 echo -e "${GREEN}Template .env created!${NC}"
                 echo -e "${YELLOW}Please review and modify the template as needed.${NC}"
