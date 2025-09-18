@@ -64,7 +64,7 @@ version: '3.8'
 services:
   aztec-node:
     container_name: aztec-sequencer
-    image: aztecprotocol/aztec:1.2.0
+    image: aztecprotocol/aztec:2.0.2
     restart: unless-stopped
     environment:
       ETHEREUM_HOSTS: \${ETHEREUM_HOSTS}
@@ -74,7 +74,7 @@ services:
       LOG_LEVEL: debug
       SEQ_PUBLISHER_PRIVATE_KEY: \${SEQ_PUBLISHER_PRIVATE_KEY:-}
     entrypoint: >
-      sh -c 'node --no-warnings /usr/src/yarn-project/aztec/dest/bin/index.js start --network alpha-testnet --node --archiver --sequencer'
+      sh -c 'node --no-warnings /usr/src/yarn-project/aztec/dest/bin/index.js start --network testnet --node --archiver --sequencer'
     ports:
       - 40400:40400/tcp
       - 40400:40400/udp
