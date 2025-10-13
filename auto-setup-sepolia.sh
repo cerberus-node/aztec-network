@@ -164,6 +164,7 @@ if [ "$NEW_BEACON" = "prysm" ]; then
       --accept-terms-of-use
       --rpc-host=0.0.0.0 --rpc-port=4000
       --grpc-gateway-host=0.0.0.0 --grpc-gateway-port=3500
+      --subscribe-all-data-subnets
 EOF
 else
   cat >> "$COMPOSE_FILE" <<EOF
@@ -189,6 +190,7 @@ else
       --checkpoint-sync-url=https://sepolia.checkpoint-sync.ethpandaops.io
       --http
       --http-address 0.0.0.0
+      --supernode
 EOF
 fi
 
