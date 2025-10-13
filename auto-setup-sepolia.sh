@@ -197,9 +197,13 @@ fi
 # === START DOCKER ===
 echo ">>> Starting Sepolia node with $NEW_BEACON..."
 
+# Pull latest images first
+echo ">>> Pulling latest Docker images..."
+cd "$DATA_DIR"
+docker compose pull
+
 # Start Geth first and wait for it to be ready
 echo ">>> Starting Geth..."
-cd "$DATA_DIR"
 docker compose up -d geth
 
 # Wait for Geth to be ready
