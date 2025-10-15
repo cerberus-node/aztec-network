@@ -170,7 +170,7 @@ else
   cat >> "$COMPOSE_FILE" <<EOF
 
   lighthouse:
-    image: sigp/lighthouse:latest
+    image: sigp/lighthouse:v8.0.0-rc.1
     container_name: lighthouse
     restart: unless-stopped
     volumes:
