@@ -143,7 +143,7 @@ if [ "$NEW_BEACON" = "prysm" ]; then
   cat >> "$COMPOSE_FILE" <<EOF
 
   prysm:
-    image: gcr.io/prysmaticlabs/prysm/beacon-chain:stable
+    image: gcr.io/prysmaticlabs/prysm/beacon-chain:v6.1.2
     container_name: prysm
     restart: unless-stopped
     volumes:
