@@ -1619,70 +1619,49 @@ echo "Slot: $CURSLOT / $FINALSLOT  ($CPERC%)";
 
 # Function to delete Sepolia node data
 delete_sepolia_data() {
-    echo -e "${RED}WARNING: This will delete all Sepolia node data!${NC}"
+    echo -e "${RED}WARNING: This will delete Sepolia node data (Geth + Beacon)!${NC}"
     echo -e "${YELLOW}This includes:${NC}"
     echo -e "• Geth blockchain data"
-    echo -e "• Beacon node data"
-    echo -e "• All node configurations"
-    echo -e "• Docker volumes and containers"
+    echo -e "• Beacon node data (Lighthouse/Prysm)"
+    echo -e "• Sepolia node configurations"
+    echo -e "• Docker volumes and containers for Sepolia"
+    echo -e "\n${GREEN}Note: Aztec Sequencer data will NOT be affected${NC}"
     echo -e "\n${RED}This action cannot be undone!${NC}"
     
-    read -p "Are you sure you want to delete all Sepolia node data? (y/N): " confirm
+    read -p "Are you sure you want to delete Sepolia node data? (y/N): " confirm
     
     if [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; then
-        echo -e "${YELLOW}Stopping all services...${NC}"
+        echo -e "${YELLOW}Stopping Sepolia services...${NC}"
         
-        # Stop Aztec Sequencer first
-        if [ -d "$AZTEC_DIR" ]; then
-            cd ~ && cd "$AZTEC_DIR" && docker compose down 2>/dev/null || true
-            echo -e "${GREEN}Aztec Sequencer stopped${NC}"
-        fi
-        
-        # Stop Geth and Beacon services
+        # Stop only Geth and Beacon services (not Aztec)
         if [ -f "$DOCKER_COMPOSE_FILE" ]; then
             cd ~ && cd "$NODE_DIR" && docker compose down 2>/dev/null || true
             echo -e "${GREEN}Geth and Beacon services stopped${NC}"
         fi
         
-        echo -e "${YELLOW}Removing Docker containers and volumes...${NC}"
+        echo -e "${YELLOW}Removing Sepolia Docker containers and volumes...${NC}"
         
-        # Remove Docker containers and volumes for Sepolia node
+        # Remove only Sepolia Docker containers and volumes
         if [ -f "$DOCKER_COMPOSE_FILE" ]; then
             cd ~ && cd "$NODE_DIR"
             docker compose down -v --remove-orphans 2>/dev/null || true
-            echo -e "${GREEN}Docker containers and volumes removed${NC}"
+            echo -e "${GREEN}Sepolia Docker containers and volumes removed${NC}"
         fi
         
-        # Remove Aztec containers and volumes
-        if [ -d "$AZTEC_DIR" ]; then
-            cd ~ && cd "$AZTEC_DIR"
-            docker compose down -v --remove-orphans 2>/dev/null || true
-            echo -e "${GREEN}Aztec containers and volumes removed${NC}"
-        fi
+        echo -e "${YELLOW}Removing Sepolia node directory...${NC}"
         
-        echo -e "${YELLOW}Removing node directories...${NC}"
-        
-        # Remove Sepolia node directory
+        # Remove only Sepolia node directory
         if [ -d "$NODE_DIR" ]; then
             rm -rf "$NODE_DIR"
             echo -e "${GREEN}Sepolia node directory removed: $NODE_DIR${NC}"
         fi
         
-        # Remove Aztec directory
-        if [ -d "$AZTEC_DIR" ]; then
-            rm -rf "$AZTEC_DIR"
-            echo -e "${GREEN}Aztec directory removed: $AZTEC_DIR${NC}"
-        fi
-        
-        # Clean up any orphaned Docker volumes
+        # Clean up orphaned Docker volumes (but be careful not to affect Aztec)
         echo -e "${YELLOW}Cleaning up orphaned Docker volumes...${NC}"
         docker volume prune -f 2>/dev/null || true
         
-        # Clean up any orphaned Docker networks
-        echo -e "${YELLOW}Cleaning up orphaned Docker networks...${NC}"
-        docker network prune -f 2>/dev/null || true
-        
-        echo -e "${GREEN}✅ All Sepolia node data has been deleted successfully!${NC}"
+        echo -e "${GREEN}✅ Sepolia node data has been deleted successfully!${NC}"
+        echo -e "${GREEN}✅ Aztec Sequencer data remains untouched${NC}"
         echo -e "${YELLOW}Note: You can now run option 1 to set up a fresh Sepolia node${NC}"
     else
         echo -e "${YELLOW}Operation cancelled. No data was deleted.${NC}"
