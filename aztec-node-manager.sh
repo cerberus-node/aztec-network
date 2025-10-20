@@ -86,6 +86,8 @@ show_menu() {
     echo -e "[12] Manage Services (Start/Stop/Restart)"
     echo -e "[13] Show Aztec Peer ID (from logs)"
     echo -e "[14] Aztec Auto Restart"
+    echo -e "[15] Delete Sepolia Node Data"
+    echo -e "[16] Live Monitor Sync Status"
     echo -e "[99] Factory Reset (DANGER)"
     echo -e "[0] Exit"
     echo -e "${BLUE}-------------------------------------------------${NC}"
@@ -1566,6 +1568,129 @@ monitor_aztec_health() {
     done
 }
 
+# Function to start live monitoring
+start_live_monitor() {
+    echo -e "${YELLOW}Starting Live Monitor...${NC}"
+    echo -e "${BLUE}Press Ctrl+C to stop monitoring${NC}"
+    echo -e "${YELLOW}Monitoring Execution Layer (Geth) and Consensus Layer (Lighthouse)${NC}"
+    echo -e "${BLUE}=================================================${NC}"
+    
+    # Check if required tools are available
+    if ! command -v watch &> /dev/null; then
+        echo -e "${RED}Error: 'watch' command not found. Installing...${NC}"
+        sudo apt-get update && sudo apt-get install -y procps
+    fi
+    
+    if ! command -v jq &> /dev/null; then
+        echo -e "${RED}Error: 'jq' command not found. Installing...${NC}"
+        sudo apt-get update && sudo apt-get install -y jq
+    fi
+    
+    # Start the live monitor
+    watch -n2 '
+clear
+echo "=== EL (Execution Layer - Geth) ===";
+SYNC=$(curl -s -H "Content-Type: application/json" \
+  -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_syncing\",\"params\":[]}" \
+  http://127.0.0.1:8545 | jq -r ".result");
+CURR=$(curl -s -H "Content-Type: application/json" \
+  -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_blockNumber\",\"params\":[]}" \
+  http://127.0.0.1:8545 | jq -r ".result" | xargs printf "%d\n");
+
+if [ "$SYNC" = "false" ]; then
+  HEAD=$CURR
+else
+  HEAD=$(echo "$SYNC" | jq -r ".highestBlock" | xargs printf "%d\n")
+fi
+
+if [ "$HEAD" -eq 0 ]; then PERC="100.00"; else PERC=$(awk "BEGIN {printf \"%.2f\", ($CURR/$HEAD)*100}"); fi
+echo "Block: $CURR / $HEAD  ($PERC%)";
+
+echo;
+echo "=== CL (Consensus Layer - Lighthouse) ===";
+CURSLOT=$(curl -s http://127.0.0.1:5052/eth/v1/beacon/headers/head | jq -r ".data.header.message.slot");
+SYNCINFO=$(curl -s http://127.0.0.1:5052/eth/v1/node/syncing);
+FINALSLOT=$(echo "$SYNCINFO" | jq -r ".data.head_slot");
+if [ "$FINALSLOT" = "null" ] || [ -z "$FINALSLOT" ]; then FINALSLOT=$CURSLOT; fi
+if [ "$FINALSLOT" -eq 0 ]; then CPERC="100.00"; else CPERC=$(awk "BEGIN {printf \"%.2f\", ($CURSLOT/$FINALSLOT)*100}"); fi
+echo "Slot: $CURSLOT / $FINALSLOT  ($CPERC%)";
+'
+}
+
+# Function to delete Sepolia node data
+delete_sepolia_data() {
+    echo -e "${RED}WARNING: This will delete all Sepolia node data!${NC}"
+    echo -e "${YELLOW}This includes:${NC}"
+    echo -e "• Geth blockchain data"
+    echo -e "• Beacon node data"
+    echo -e "• All node configurations"
+    echo -e "• Docker volumes and containers"
+    echo -e "\n${RED}This action cannot be undone!${NC}"
+    
+    read -p "Are you sure you want to delete all Sepolia node data? (y/N): " confirm
+    
+    if [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; then
+        echo -e "${YELLOW}Stopping all services...${NC}"
+        
+        # Stop Aztec Sequencer first
+        if [ -d "$AZTEC_DIR" ]; then
+            cd ~ && cd "$AZTEC_DIR" && docker compose down 2>/dev/null || true
+            echo -e "${GREEN}Aztec Sequencer stopped${NC}"
+        fi
+        
+        # Stop Geth and Beacon services
+        if [ -f "$DOCKER_COMPOSE_FILE" ]; then
+            cd ~ && cd "$NODE_DIR" && docker compose down 2>/dev/null || true
+            echo -e "${GREEN}Geth and Beacon services stopped${NC}"
+        fi
+        
+        echo -e "${YELLOW}Removing Docker containers and volumes...${NC}"
+        
+        # Remove Docker containers and volumes for Sepolia node
+        if [ -f "$DOCKER_COMPOSE_FILE" ]; then
+            cd ~ && cd "$NODE_DIR"
+            docker compose down -v --remove-orphans 2>/dev/null || true
+            echo -e "${GREEN}Docker containers and volumes removed${NC}"
+        fi
+        
+        # Remove Aztec containers and volumes
+        if [ -d "$AZTEC_DIR" ]; then
+            cd ~ && cd "$AZTEC_DIR"
+            docker compose down -v --remove-orphans 2>/dev/null || true
+            echo -e "${GREEN}Aztec containers and volumes removed${NC}"
+        fi
+        
+        echo -e "${YELLOW}Removing node directories...${NC}"
+        
+        # Remove Sepolia node directory
+        if [ -d "$NODE_DIR" ]; then
+            rm -rf "$NODE_DIR"
+            echo -e "${GREEN}Sepolia node directory removed: $NODE_DIR${NC}"
+        fi
+        
+        # Remove Aztec directory
+        if [ -d "$AZTEC_DIR" ]; then
+            rm -rf "$AZTEC_DIR"
+            echo -e "${GREEN}Aztec directory removed: $AZTEC_DIR${NC}"
+        fi
+        
+        # Clean up any orphaned Docker volumes
+        echo -e "${YELLOW}Cleaning up orphaned Docker volumes...${NC}"
+        docker volume prune -f 2>/dev/null || true
+        
+        # Clean up any orphaned Docker networks
+        echo -e "${YELLOW}Cleaning up orphaned Docker networks...${NC}"
+        docker network prune -f 2>/dev/null || true
+        
+        echo -e "${GREEN}✅ All Sepolia node data has been deleted successfully!${NC}"
+        echo -e "${YELLOW}Note: You can now run option 1 to set up a fresh Sepolia node${NC}"
+    else
+        echo -e "${YELLOW}Operation cancelled. No data was deleted.${NC}"
+    fi
+    
+    read -p "Press Enter to continue..."
+}
+
 # Function to start/stop health monitor in background
 manage_aztec_health_monitor() {
     local monitor_pid_file="$AZTEC_DIR/.health_monitor.pid"
@@ -1660,6 +1785,12 @@ while true; do
             ;;
         14)
             manage_aztec_health_monitor
+            ;;
+        15)
+            delete_sepolia_data
+            ;;
+        16)
+            start_live_monitor
             ;;
         99)
             factory_reset
