@@ -160,7 +160,7 @@ if [ "$NEW_BEACON" = "prysm" ]; then
       --execution-endpoint=http://geth:8551
       --jwt-secret=/root/jwt.hex
       --genesis-beacon-api-url=https://lodestar-sepolia.chainsafe.io
-      --checkpoint-sync-url=https://sepolia.checkpoint-sync.ethpandaops.io
+      --checkpoint-sync-url=https://sepolia.beaconstate.info
       --accept-terms-of-use
       --rpc-host=0.0.0.0 --rpc-port=4000
       --grpc-gateway-host=0.0.0.0 --grpc-gateway-port=3500
@@ -187,7 +187,7 @@ else
       --network sepolia
       --execution-endpoint http://geth:8551
       --execution-jwt /root/jwt.hex
-      --checkpoint-sync-url=https://sepolia.checkpoint-sync.ethpandaops.io
+      --checkpoint-sync-url=https://sepolia.beaconstate.info
       --http
       --http-address 0.0.0.0
       --supernode
