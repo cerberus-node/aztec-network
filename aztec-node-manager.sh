@@ -60,9 +60,9 @@ show_menu() {
     echo -e "${YELLOW}| |     ______   | || |  _________   | || |  _______     | || |   ______     | || |  _________   | || |  _______     | || | _____  _____ | || |    _______   | |${NC}"
     echo -e "${YELLOW}| |   .' ___  |  | || | |_   ___  |  | || | |_   __ \\    | || |  |_   _ \\    | || | |_   ___  |  | || | |_   __ \\    | || ||_   _||_   _|| || |   /  ___  |  | |${NC}"
     echo -e "${YELLOW}| |  / .'   \\_|  | || |   | |_  \\_|  | || |   | |__) |   | || |    | |_) |   | || |   | |_  \\_|  | || |   | |__) |   | || |  | |    | |  | || |  |  (__ \\_|  | |${NC}"
-    echo -e "${YELLOW}| |  | |         | || |   |  _|  _   | || |   |  __ /    | || |    |  __'.   | || |   |  _|  _   | || |   |  __ /    | || |  | '    ' |  | || |   '.___`-.   | |${NC}"
-    echo -e "${YELLOW}| |  \\ `.___.'\\  | || |  _| |___/ |  | || |  _| |  \\ \\_  | || |   _| |__) |  | || |  _| |___/ |  | || |  _| |  \\ \\_  | || |   \\ `--' /   | || |  |`\\____) |  | |${NC}"
-    echo -e "${YELLOW}| |   `._____.'  | || | |_________|  | || | |____| |___| | || |  |_______/   | || | |_________|  | || | |____| |___| | || |    `.__.'    | || |  |_______.'  | |${NC}"
+    echo -e "${YELLOW}| |  | |         | || |   |  _|  _   | || |   |  __ /    | || |    |  __'.   | || |   |  _|  _   | || |   |  __ /    | || |  | '    ' |  | || |   '.___\`-.   | |${NC}"
+    echo -e "${YELLOW}| |  \\ \`.___.'\\  | || |  _| |___/ |  | || |  _| |  \\ \\_  | || |   _| |__) |  | || |  _| |___/ |  | || |  _| |  \\ \\_  | || |   \\ \`--' /   | || |  |\`\\____) |  | |${NC}"
+    echo -e "${YELLOW}| |   \`._____.'  | || | |_________|  | || | |____| |___| | || |  |_______/   | || | |_________|  | || | |____| |___| | || |    \`.__.'    | || |  |_______.'  | |${NC}"
     echo -e "${YELLOW}| |              | || |              | || |              | || |              | || |              | || |              | || |              | || |              | |${NC}"
     echo -e "${YELLOW}| '--------------' || '--------------' || '--------------' || '--------------' || '--------------' || '--------------' || '--------------' || '--------------' |${NC}"
     echo -e "${YELLOW} '----------------'  '----------------'  '----------------'  '----------------'  '----------------'  '----------------'  '----------------'  '----------------' ${NC}"
@@ -88,6 +88,8 @@ show_menu() {
     echo -e "[14] Aztec Auto Restart"
     echo -e "[15] Delete Sepolia Node Data"
     echo -e "[16] Live Monitor Sync Status"
+    echo -e "[17] Faucet (Approve Token)"
+    echo -e "[18] Manage Keystore & Validator"
     echo -e "[99] Factory Reset (DANGER)"
     echo -e "[0] Exit"
     echo -e "${BLUE}-------------------------------------------------${NC}"
@@ -110,9 +112,9 @@ show_welcome() {
     echo -e "${YELLOW}| |     ______   | || |  _________   | || |  _______     | || |   ______     | || |  _________   | || |  _______     | || | _____  _____ | || |    _______   | |${NC}"
     echo -e "${YELLOW}| |   .' ___  |  | || | |_   ___  |  | || | |_   __ \\    | || |  |_   _ \\    | || | |_   ___  |  | || | |_   __ \\    | || ||_   _||_   _|| || |   /  ___  |  | |${NC}"
     echo -e "${YELLOW}| |  / .'   \\_|  | || |   | |_  \\_|  | || |   | |__) |   | || |    | |_) |   | || |   | |_  \\_|  | || |   | |__) |   | || |  | |    | |  | || |  |  (__ \\_|  | |${NC}"
-    echo -e "${YELLOW}| |  | |         | || |   |  _|  _   | || |   |  __ /    | || |    |  __'.   | || |   |  _|  _   | || |   |  __ /    | || |  | '    ' |  | || |   '.___`-.   | |${NC}"
-    echo -e "${YELLOW}| |  \\ `.___.'\\  | || |  _| |___/ |  | || |  _| |  \\ \\_  | || |   _| |__) |  | || |  _| |___/ |  | || |  _| |  \\ \\_  | || |   \\ `--' /   | || |  |`\\____) |  | |${NC}"
-    echo -e "${YELLOW}| |   `._____.'  | || | |_________|  | || | |____| |___| | || |  |_______/   | || | |_________|  | || | |____| |___| | || |    `.__.'    | || |  |_______.'  | |${NC}"
+    echo -e "${YELLOW}| |  | |         | || |   |  _|  _   | || |   |  __ /    | || |    |  __'.   | || |   |  _|  _   | || |   |  __ /    | || |  | '    ' |  | || |   '.___\`-.   | |${NC}"
+    echo -e "${YELLOW}| |  \\ \`.___.'\\  | || |  _| |___/ |  | || |  _| |  \\ \\_  | || |   _| |__) |  | || |  _| |___/ |  | || |  _| |  \\ \\_  | || |   \\ \`--' /   | || |  |\`\\____) |  | |${NC}"
+    echo -e "${YELLOW}| |   \`._____.'  | || | |_________|  | || | |____| |___| | || |  |_______/   | || | |_________|  | || | |____| |___| | || |    \`.__.'    | || |  |_______.'  | |${NC}"
     echo -e "${YELLOW}| |              | || |              | || |              | || |              | || |              | || |              | || |              | || |              | |${NC}"
     echo -e "${YELLOW}| '--------------' || '--------------' || '--------------' || '--------------' || '--------------' || '--------------' || '--------------' || '--------------' |${NC}"
     echo -e "${YELLOW} '----------------'  '----------------'  '----------------'  '----------------'  '----------------'  '----------------'  '----------------'  '----------------' ${NC}"
@@ -374,7 +376,7 @@ EOF
 services:
   aztec-node:
     container_name: aztec-sequencer
-    image: aztecprotocol/aztec:2.0.2
+    image: aztecprotocol/aztec:2.1.2
     restart: unless-stopped
     environment:
       ETHEREUM_HOSTS: \${ETHEREUM_HOSTS}
@@ -1711,6 +1713,480 @@ manage_aztec_health_monitor() {
     done
 }
 
+# Function to handle faucet (approve token)
+faucet_approve() {
+    echo -e "${YELLOW}=================================================${NC}"
+    echo -e "${YELLOW}    Faucet - Approve Token${NC}"
+    echo -e "${YELLOW}=================================================${NC}"
+    
+    # Check if cast is installed
+    if ! command -v cast &> /dev/null; then
+        echo -e "${RED}Error: cast command not found!${NC}"
+        echo -e "${YELLOW}Please install foundry first:${NC}"
+        echo -e "curl -L https://foundry.paradigm.xyz | bash"
+        echo -e "foundryup"
+        read -p "Press Enter to continue..."
+        return 1
+    fi
+    
+    # Load environment variables from .env if it exists
+    if [ -d "$AZTEC_DIR" ] && [ -f "$AZTEC_DIR/.env" ]; then
+        echo -e "${YELLOW}Loading environment variables from .env...${NC}"
+        # Safely load environment variables from .env
+        set -a
+        source "$AZTEC_DIR/.env" 2>/dev/null || true
+        set +a
+    fi
+    
+    # Check for PRIVATE_KEY_OF_OLD_SEQUENCER
+    if [ -z "$PRIVATE_KEY_OF_OLD_SEQUENCER" ]; then
+        echo -e "${YELLOW}PRIVATE_KEY_OF_OLD_SEQUENCER not found in environment.${NC}"
+        read -p "Enter private key (0x...): " PRIVATE_KEY_OF_OLD_SEQUENCER
+        if [ -z "$PRIVATE_KEY_OF_OLD_SEQUENCER" ]; then
+            echo -e "${RED}Private key is required!${NC}"
+            read -p "Press Enter to continue..."
+            return 1
+        fi
+    fi
+    
+    # Check for ETH_RPC
+    if [ -z "$ETH_RPC" ]; then
+        # Try to load from saved config
+        local saved_rpc=$(load_config "ETH_RPC_URL")
+        if [ -n "$saved_rpc" ]; then
+            ETH_RPC="$saved_rpc"
+            echo -e "${YELLOW}Using saved RPC URL: $ETH_RPC${NC}"
+        else
+            # Try to get from .env if available
+            if [ -d "$AZTEC_DIR" ] && [ -f "$AZTEC_DIR/.env" ]; then
+                local env_rpc=$(grep "^ETHEREUM_HOSTS=" "$AZTEC_DIR/.env" | cut -d'=' -f2- | tr -d '"' | tr -d "'")
+                if [ -n "$env_rpc" ]; then
+                    ETH_RPC="$env_rpc"
+                    echo -e "${YELLOW}Using RPC URL from .env: $ETH_RPC${NC}"
+                else
+                    echo -e "${YELLOW}ETH_RPC not found in environment.${NC}"
+                    read -p "Enter Ethereum RPC URL: " ETH_RPC
+                    if [ -z "$ETH_RPC" ]; then
+                        echo -e "${RED}RPC URL is required!${NC}"
+                        read -p "Press Enter to continue..."
+                        return 1
+                    fi
+                fi
+            else
+                echo -e "${YELLOW}ETH_RPC not found in environment.${NC}"
+                read -p "Enter Ethereum RPC URL: " ETH_RPC
+                if [ -z "$ETH_RPC" ]; then
+                    echo -e "${RED}RPC URL is required!${NC}"
+                    read -p "Press Enter to continue..."
+                    return 1
+                fi
+            fi
+        fi
+    fi
+    
+    # Contract address and parameters
+    local CONTRACT_ADDRESS="0x139d2a7a0881e16332d7D1F8DB383A4507E1Ea7A"
+    local SPENDER_ADDRESS="0xebd99ff0ff6677205509ae73f93d0ca52ac85d67"
+    local AMOUNT="200000ether"
+    
+    echo -e "\n${BLUE}Transaction Details:${NC}"
+    echo -e "Contract: ${YELLOW}$CONTRACT_ADDRESS${NC}"
+    echo -e "Function: ${YELLOW}approve(address,uint256)${NC}"
+    echo -e "Spender: ${YELLOW}$SPENDER_ADDRESS${NC}"
+    echo -e "Amount: ${YELLOW}$AMOUNT${NC}"
+    echo -e "RPC URL: ${YELLOW}$ETH_RPC${NC}"
+    
+    echo -e "\n${YELLOW}Executing cast send command...${NC}"
+    
+    # Execute the cast send command
+    cast send "$CONTRACT_ADDRESS" "approve(address,uint256)" "$SPENDER_ADDRESS" "$AMOUNT" \
+        --private-key "$PRIVATE_KEY_OF_OLD_SEQUENCER" \
+        --rpc-url "$ETH_RPC"
+    
+    if [ $? -eq 0 ]; then
+        echo -e "\n${GREEN}✅ Transaction sent successfully!${NC}"
+    else
+        echo -e "\n${RED}❌ Transaction failed!${NC}"
+        echo -e "${YELLOW}Please check the error message above.${NC}"
+    fi
+    
+    read -p "Press Enter to continue..."
+}
+
+# Function to manage keystore and validator
+manage_keystore_validator() {
+    while true; do
+        clear
+        echo -e "${BLUE}=================================================${NC}"
+        echo -e "${YELLOW}    Manage Keystore & Validator${NC}"
+        echo -e "${BLUE}=================================================${NC}"
+        
+        # Check if aztec command is available
+        if ! command -v aztec &> /dev/null; then
+            echo -e "${RED}Error: aztec command not found!${NC}"
+            echo -e "${YELLOW}Please install Aztec CLI first.${NC}"
+            read -p "Press Enter to continue..."
+            return 1
+        fi
+        
+        echo -e "\n${GREEN}Options:${NC}"
+        echo "1) Create New Keystore (Auto-generated keys)"
+        echo "2) Create New Keystore (With custom mnemonic)"
+        echo "3) Add L1 Validator (Using existing keystore)"
+        echo "4) View Keystore Info"
+        echo "0) Back to main menu"
+        
+        read -p "Enter your choice: " keystore_choice
+        
+        case $keystore_choice in
+            1)
+                create_keystore_auto
+                ;;
+            2)
+                create_keystore_with_mnemonic
+                ;;
+            3)
+                add_l1_validator
+                ;;
+            4)
+                view_keystore_info
+                ;;
+            0)
+                return
+                ;;
+            *)
+                echo -e "${RED}Invalid choice!${NC}"
+                read -p "Press Enter to continue..."
+                ;;
+        esac
+    done
+}
+
+# Function to create keystore with auto-generated keys
+create_keystore_auto() {
+    echo -e "\n${YELLOW}=================================================${NC}"
+    echo -e "${YELLOW}    Create Keystore (Auto-generated)${NC}"
+    echo -e "${YELLOW}=================================================${NC}"
+    
+    # Default fee recipient
+    local FEE_RECIPIENT="0x0000000000000000000000000000000000000000000000000000000000000000"
+    
+    echo -e "\n${BLUE}Configuration:${NC}"
+    echo -e "Fee Recipient: ${YELLOW}$FEE_RECIPIENT${NC} (default)"
+    read -p "Enter fee recipient address (or press Enter for default): " custom_fee_recipient
+    if [ -n "$custom_fee_recipient" ]; then
+        FEE_RECIPIENT="$custom_fee_recipient"
+    fi
+    
+    read -p "Enter number of publisher accounts (default: 0): " publisher_count
+    publisher_count=${publisher_count:-0}
+    
+    echo -e "\n${YELLOW}Creating keystore with auto-generated keys...${NC}"
+    if [ "$publisher_count" -gt 0 ]; then
+        echo -e "${BLUE}Command:${NC} aztec validator-keys new --fee-recipient $FEE_RECIPIENT --publisher-count $publisher_count"
+    else
+        echo -e "${BLUE}Command:${NC} aztec validator-keys new --fee-recipient $FEE_RECIPIENT"
+    fi
+    
+    # Execute command
+    if [ "$publisher_count" -gt 0 ]; then
+        aztec validator-keys new \
+            --fee-recipient "$FEE_RECIPIENT" \
+            --publisher-count "$publisher_count"
+    else
+        aztec validator-keys new \
+            --fee-recipient "$FEE_RECIPIENT"
+    fi
+    
+    if [ $? -eq 0 ]; then
+        echo -e "\n${GREEN}✅ Keystore created successfully!${NC}"
+        echo -e "${YELLOW}⚠️  IMPORTANT: Save your mnemonic securely!${NC}"
+        echo -e "${YELLOW}⚠️  The keystore file contains private keys. Back it up securely!${NC}"
+    else
+        echo -e "\n${RED}❌ Failed to create keystore!${NC}"
+    fi
+    
+    read -p "Press Enter to continue..."
+}
+
+# Function to create keystore with custom mnemonic
+create_keystore_with_mnemonic() {
+    echo -e "\n${YELLOW}=================================================${NC}"
+    echo -e "${YELLOW}    Create Keystore (With Mnemonic)${NC}"
+    echo -e "${YELLOW}=================================================${NC}"
+    
+    # Default fee recipient
+    local FEE_RECIPIENT="0x0000000000000000000000000000000000000000000000000000000000000000"
+    
+    echo -e "\n${BLUE}Configuration:${NC}"
+    echo -e "Fee Recipient: ${YELLOW}$FEE_RECIPIENT${NC} (default)"
+    read -p "Enter fee recipient address (or press Enter for default): " custom_fee_recipient
+    if [ -n "$custom_fee_recipient" ]; then
+        FEE_RECIPIENT="$custom_fee_recipient"
+    fi
+    
+    echo -e "\n${YELLOW}Enter your 12-word mnemonic phrase:${NC}"
+    read -p "Mnemonic: " mnemonic
+    
+    if [ -z "$mnemonic" ]; then
+        echo -e "${RED}Mnemonic is required!${NC}"
+        read -p "Press Enter to continue..."
+        return 1
+    fi
+    
+    read -p "Enter number of publisher accounts (default: 0): " publisher_count
+    publisher_count=${publisher_count:-0}
+    
+    echo -e "\n${YELLOW}Creating keystore with custom mnemonic...${NC}"
+    
+    # Execute command
+    if [ "$publisher_count" -gt 0 ]; then
+        aztec validator-keys new \
+            --fee-recipient "$FEE_RECIPIENT" \
+            --mnemonic "$mnemonic" \
+            --publisher-count "$publisher_count"
+    else
+        aztec validator-keys new \
+            --fee-recipient "$FEE_RECIPIENT" \
+            --mnemonic "$mnemonic"
+    fi
+    
+    if [ $? -eq 0 ]; then
+        echo -e "\n${GREEN}✅ Keystore created successfully!${NC}"
+        echo -e "${YELLOW}⚠️  IMPORTANT: The keystore file contains private keys. Back it up securely!${NC}"
+    else
+        echo -e "\n${RED}❌ Failed to create keystore!${NC}"
+    fi
+    
+    read -p "Press Enter to continue..."
+}
+
+# Function to view keystore info
+view_keystore_info() {
+    echo -e "\n${YELLOW}=================================================${NC}"
+    echo -e "${YELLOW}    View Keystore Info${NC}"
+    echo -e "${YELLOW}=================================================${NC}"
+    
+    local KEYSTORE_DIR="$HOME/.aztec/keystore"
+    
+    if [ ! -d "$KEYSTORE_DIR" ]; then
+        echo -e "${RED}Keystore directory not found: $KEYSTORE_DIR${NC}"
+        read -p "Press Enter to continue..."
+        return 1
+    fi
+    
+    # List all keystore files
+    local keystore_files=("$KEYSTORE_DIR"/key*.json)
+    
+    if [ ! -e "${keystore_files[0]}" ]; then
+        echo -e "${RED}No keystore files found in $KEYSTORE_DIR${NC}"
+        read -p "Press Enter to continue..."
+        return 1
+    fi
+    
+    echo -e "\n${BLUE}Available keystore files:${NC}"
+    local i=1
+    for file in "${keystore_files[@]}"; do
+        echo "  [$i] $(basename "$file")"
+        i=$((i+1))
+    done
+    
+    read -p "Select keystore file number (or press Enter for first one): " file_choice
+    file_choice=${file_choice:-1}
+    
+    if [ "$file_choice" -ge 1 ] && [ "$file_choice" -le "${#keystore_files[@]}" ]; then
+        local selected_file="${keystore_files[$((file_choice-1))]}"
+        echo -e "\n${BLUE}Keystore file: ${YELLOW}$selected_file${NC}"
+        echo -e "\n${BLUE}Contents:${NC}"
+        
+        # Check if jq is available for pretty printing
+        if command -v jq &> /dev/null; then
+            cat "$selected_file" | jq .
+        else
+            cat "$selected_file"
+        fi
+    else
+        echo -e "${RED}Invalid selection!${NC}"
+    fi
+    
+    read -p "Press Enter to continue..."
+}
+
+# Function to add L1 validator
+add_l1_validator() {
+    echo -e "\n${YELLOW}=================================================${NC}"
+    echo -e "${YELLOW}    Add L1 Validator${NC}"
+    echo -e "${YELLOW}=================================================${NC}"
+    
+    # Load environment variables from .env if it exists
+    if [ -d "$AZTEC_DIR" ] && [ -f "$AZTEC_DIR/.env" ]; then
+        echo -e "${YELLOW}Loading environment variables from .env...${NC}"
+        set -a
+        source "$AZTEC_DIR/.env" 2>/dev/null || true
+        set +a
+    fi
+    
+    # Check for ETH_RPC
+    if [ -z "$ETH_RPC" ]; then
+        # Try to load from saved config
+        local saved_rpc=$(load_config "ETH_RPC_URL")
+        if [ -n "$saved_rpc" ]; then
+            ETH_RPC="$saved_rpc"
+            echo -e "${YELLOW}Using saved RPC URL: $ETH_RPC${NC}"
+        else
+            # Try to get from .env if available
+            if [ -d "$AZTEC_DIR" ] && [ -f "$AZTEC_DIR/.env" ]; then
+                local env_rpc=$(grep "^ETHEREUM_HOSTS=" "$AZTEC_DIR/.env" | cut -d'=' -f2- | tr -d '"' | tr -d "'")
+                if [ -n "$env_rpc" ]; then
+                    ETH_RPC="$env_rpc"
+                    echo -e "${YELLOW}Using RPC URL from .env: $ETH_RPC${NC}"
+                else
+                    echo -e "${YELLOW}ETH_RPC not found in environment.${NC}"
+                    read -p "Enter Ethereum RPC URL: " ETH_RPC
+                    if [ -z "$ETH_RPC" ]; then
+                        echo -e "${RED}RPC URL is required!${NC}"
+                        read -p "Press Enter to continue..."
+                        return 1
+                    fi
+                fi
+            else
+                echo -e "${YELLOW}ETH_RPC not found in environment.${NC}"
+                read -p "Enter Ethereum RPC URL: " ETH_RPC
+                if [ -z "$ETH_RPC" ]; then
+                    echo -e "${RED}RPC URL is required!${NC}"
+                    read -p "Press Enter to continue..."
+                    return 1
+                fi
+            fi
+        fi
+    fi
+    
+    # Check for PRIVATE_KEY_OF_OLD_SEQUENCER
+    if [ -z "$PRIVATE_KEY_OF_OLD_SEQUENCER" ]; then
+        echo -e "${YELLOW}PRIVATE_KEY_OF_OLD_SEQUENCER not found in environment.${NC}"
+        read -p "Enter private key (0x...): " PRIVATE_KEY_OF_OLD_SEQUENCER
+        if [ -z "$PRIVATE_KEY_OF_OLD_SEQUENCER" ]; then
+            echo -e "${RED}Private key is required!${NC}"
+            read -p "Press Enter to continue..."
+            return 1
+        fi
+    fi
+    
+    # Find keystore file
+    local KEYSTORE_DIR="$HOME/.aztec/keystore"
+    local keystore_file=""
+    
+    if [ -d "$KEYSTORE_DIR" ]; then
+        local keystore_files=("$KEYSTORE_DIR"/key*.json)
+        if [ -e "${keystore_files[0]}" ]; then
+            if [ ${#keystore_files[@]} -eq 1 ]; then
+                keystore_file="${keystore_files[0]}"
+                echo -e "${GREEN}Using keystore: $(basename "$keystore_file")${NC}"
+            else
+                echo -e "\n${BLUE}Available keystore files:${NC}"
+                local i=1
+                for file in "${keystore_files[@]}"; do
+                    echo "  [$i] $(basename "$file")"
+                    i=$((i+1))
+                done
+                read -p "Select keystore file number: " file_choice
+                if [ "$file_choice" -ge 1 ] && [ "$file_choice" -le "${#keystore_files[@]}" ]; then
+                    keystore_file="${keystore_files[$((file_choice-1))]}"
+                else
+                    echo -e "${RED}Invalid selection!${NC}"
+                    read -p "Press Enter to continue..."
+                    return 1
+                fi
+            fi
+        fi
+    fi
+    
+    if [ -z "$keystore_file" ] || [ ! -f "$keystore_file" ]; then
+        echo -e "${RED}No keystore file found!${NC}"
+        echo -e "${YELLOW}Please create a keystore first using option 1 or 2.${NC}"
+        read -p "Press Enter to continue..."
+        return 1
+    fi
+    
+    # Extract information from keystore
+    echo -e "\n${YELLOW}Extracting information from keystore...${NC}"
+    
+    # Check if jq is available
+    if ! command -v jq &> /dev/null; then
+        echo -e "${RED}Error: jq is required to parse keystore file!${NC}"
+        echo -e "${YELLOW}Please install jq: sudo apt-get install jq (or brew install jq on macOS)${NC}"
+        read -p "Press Enter to continue..."
+        return 1
+    fi
+    
+    # Extract attester ETH address and BLS secret key
+    local ETH_ATTESTER_ADDRESS=$(jq -r '.validators[0].attester.eth' "$keystore_file" 2>/dev/null)
+    local BLS_ATTESTER_PRIV_KEY=$(jq -r '.validators[0].attester.bls' "$keystore_file" 2>/dev/null)
+    
+    if [ -z "$ETH_ATTESTER_ADDRESS" ] || [ "$ETH_ATTESTER_ADDRESS" = "null" ]; then
+        echo -e "${RED}Failed to extract ETH attester address from keystore!${NC}"
+        read -p "Press Enter to continue..."
+        return 1
+    fi
+    
+    if [ -z "$BLS_ATTESTER_PRIV_KEY" ] || [ "$BLS_ATTESTER_PRIV_KEY" = "null" ]; then
+        echo -e "${RED}Failed to extract BLS secret key from keystore!${NC}"
+        read -p "Press Enter to continue..."
+        return 1
+    fi
+    
+    # Default rollup address
+    local ROLLUP_ADDRESS="0xebd99ff0ff6677205509ae73f93d0ca52ac85d67"
+    
+    echo -e "\n${BLUE}Validator Configuration:${NC}"
+    echo -e "Attester ETH Address: ${YELLOW}$ETH_ATTESTER_ADDRESS${NC}"
+    echo -e "BLS Secret Key: ${YELLOW}${BLS_ATTESTER_PRIV_KEY:0:20}...${NC}"
+    echo -e "Rollup Address: ${YELLOW}$ROLLUP_ADDRESS${NC} (default)"
+    
+    read -p "Enter rollup address (or press Enter for default): " custom_rollup
+    if [ -n "$custom_rollup" ]; then
+        ROLLUP_ADDRESS="$custom_rollup"
+    fi
+    
+    read -p "Enter withdrawer address (default: $ETH_ATTESTER_ADDRESS): " withdrawer_address
+    withdrawer_address=${withdrawer_address:-$ETH_ATTESTER_ADDRESS}
+    
+    read -p "Enter network (default: testnet): " network
+    network=${network:-testnet}
+    
+    echo -e "\n${YELLOW}Adding L1 validator...${NC}"
+    echo -e "${BLUE}Command:${NC}"
+    echo "aztec add-l1-validator \\"
+    echo "  --l1-rpc-urls $ETH_RPC \\"
+    echo "  --network $network \\"
+    echo "  --private-key $PRIVATE_KEY_OF_OLD_SEQUENCER \\"
+    echo "  --attester $ETH_ATTESTER_ADDRESS \\"
+    echo "  --withdrawer $withdrawer_address \\"
+    echo "  --bls-secret-key $BLS_ATTESTER_PRIV_KEY \\"
+    echo "  --rollup $ROLLUP_ADDRESS"
+    
+    echo -e "\n${YELLOW}Executing command...${NC}"
+    
+    # Execute the command
+    aztec add-l1-validator \
+        --l1-rpc-urls "$ETH_RPC" \
+        --network "$network" \
+        --private-key "$PRIVATE_KEY_OF_OLD_SEQUENCER" \
+        --attester "$ETH_ATTESTER_ADDRESS" \
+        --withdrawer "$withdrawer_address" \
+        --bls-secret-key "$BLS_ATTESTER_PRIV_KEY" \
+        --rollup "$ROLLUP_ADDRESS"
+    
+    if [ $? -eq 0 ]; then
+        echo -e "\n${GREEN}✅ Validator added successfully!${NC}"
+    else
+        echo -e "\n${RED}❌ Failed to add validator!${NC}"
+        echo -e "${YELLOW}Please check the error message above.${NC}"
+    fi
+    
+    read -p "Press Enter to continue..."
+}
+
 # Main loop
 while true; do
     if [ "$FIRST_RUN" = "true" ]; then
@@ -1770,6 +2246,12 @@ while true; do
             ;;
         16)
             start_live_monitor
+            ;;
+        17)
+            faucet_approve
+            ;;
+        18)
+            manage_keystore_validator
             ;;
         99)
             factory_reset
