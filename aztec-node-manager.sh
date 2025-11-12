@@ -1719,12 +1719,14 @@ faucet_approve() {
     echo -e "${YELLOW}    Faucet - Approve Token${NC}"
     echo -e "${YELLOW}=================================================${NC}"
     
-    # Check if cast is installed
-    if ! command -v cast &> /dev/null; then
-        echo -e "${RED}Error: cast command not found!${NC}"
-        echo -e "${YELLOW}Please install foundry first:${NC}"
-        echo -e "curl -L https://foundry.paradigm.xyz | bash"
-        echo -e "foundryup"
+    # Ensure cast is available
+    if ! ensure_cast_cli; then
+        echo -e "${RED}Unable to install Foundry cast automatically.${NC}"
+        echo -e "${YELLOW}Please install Foundry manually and rerun this option:${NC}"
+        echo -e "  curl -L https://foundry.paradigm.xyz | bash"
+        echo -e "  ~/.foundry/bin/foundryup"
+        echo -e "  echo 'export PATH=\"\$HOME/.foundry/bin:\$PATH\"' >> ~/.zshrc"
+        echo -e "  source ~/.zshrc"
         read -p "Press Enter to continue..."
         return 1
     fi
@@ -1813,6 +1815,350 @@ faucet_approve() {
     read -p "Press Enter to continue..."
 }
 
+# Derive Ethereum address from private key using available tooling
+derive_eth_address_from_private_key() {
+    local input_priv="$1"
+    local normalized=""
+    local address=""
+
+    if [ -z "$input_priv" ]; then
+        echo ""
+        return 1
+    fi
+
+    if [[ "$input_priv" =~ ^0x[0-9a-fA-F]{64}$ ]]; then
+        normalized="$input_priv"
+    elif [[ "$input_priv" =~ ^[0-9a-fA-F]{64}$ ]]; then
+        normalized="0x$input_priv"
+    else
+        echo ""
+        return 1
+    fi
+
+    if ! command -v cast &> /dev/null; then
+        ensure_cast_cli >/dev/null 2>&1 || true
+    fi
+
+    if command -v cast &> /dev/null; then
+        address=$(cast wallet address --private-key "$normalized" 2>/dev/null | tail -n1 | tr -d '[:space:]')
+        if [[ "$address" =~ ^0x[0-9a-fA-F]{40}$ ]]; then
+            echo "$address"
+            return 0
+        fi
+    fi
+
+    if command -v npx &> /dev/null; then
+        local node_script='const pkIn=process.argv[1] || ""; const pk=pkIn.startsWith("0x") ? pkIn.slice(2) : pkIn; if (!/^[0-9a-fA-F]{64}$/.test(pk)) { process.exit(1); } const { keccak256 } = require("ethereum-cryptography/keccak"); const { secp256k1 } = require("@noble/secp256k1"); const pub = secp256k1.getPublicKey(pk, false).slice(1); const addr = keccak256(pub).slice(-20); console.log("0x" + Buffer.from(addr).toString("hex"));'
+        address=$(npx --yes -p @noble/secp256k1@1.7.1 -p ethereum-cryptography@1.2.0 node -e "$node_script" "$normalized" 2>/dev/null | tail -n1 | tr -d '[:space:]')
+        if [[ "$address" =~ ^0x[0-9a-fA-F]{40}$ ]]; then
+            echo "$address"
+            return 0
+        fi
+    fi
+
+    echo ""
+    return 1
+}
+
+# Ensure libusb is available on macOS for Foundry binaries
+ensure_libusb() {
+    if [ "$(uname -s)" != "Darwin" ]; then
+        return 0
+    fi
+
+    local fallback_path="${DYLD_FALLBACK_LIBRARY_PATH:-/usr/local/lib:/usr/lib}"
+    local potential_paths=(
+        "/usr/local/opt/libusb/lib/libusb-1.0.0.dylib"
+        "/opt/homebrew/opt/libusb/lib/libusb-1.0.0.dylib"
+    )
+
+    for lib_path in "${potential_paths[@]}"; do
+        if [ -f "$lib_path" ]; then
+            case ":$fallback_path:" in
+                *":$(dirname "$lib_path"):"*) ;;
+                *)
+                    fallback_path="$(dirname "$lib_path"):${fallback_path}"
+                    ;;
+            esac
+            export DYLD_FALLBACK_LIBRARY_PATH="$fallback_path"
+            return 0
+        fi
+    done
+
+    if command -v brew &> /dev/null; then
+        echo -e "${YELLOW}libusb not found. Installing via Homebrew (brew install libusb)...${NC}"
+        if ! brew install libusb; then
+            echo -e "${RED}Failed to install libusb using Homebrew.${NC}"
+            return 1
+        fi
+    else
+        echo -e "${RED}libusb library is required but was not found.${NC}"
+        echo -e "${YELLOW}Install libusb manually, e.g. using Homebrew:${NC}"
+        echo "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+        echo "  brew install libusb"
+        return 1
+    fi
+
+    for lib_path in "${potential_paths[@]}"; do
+        if [ -f "$lib_path" ]; then
+            case ":$fallback_path:" in
+                *":$(dirname "$lib_path"):"*) ;;
+                *)
+                    fallback_path="$(dirname "$lib_path"):${fallback_path}"
+                    ;;
+            esac
+            export DYLD_FALLBACK_LIBRARY_PATH="$fallback_path"
+            return 0
+        fi
+    done
+
+    echo -e "${RED}libusb installation completed, but the library was not found in expected locations.${NC}"
+    return 1
+}
+
+# Ensure Foundry (cast) CLI is available
+ensure_cast_cli() {
+    local FOUNDRY_BIN_DIR="$HOME/.foundry/bin"
+    local cast_cmd=""
+
+    find_cast_binary() {
+        if command -v cast &> /dev/null; then
+            cast_cmd=$(command -v cast)
+            return 0
+        fi
+
+        if [ -x "$FOUNDRY_BIN_DIR/cast" ]; then
+            case ":$PATH:" in
+                *":$FOUNDRY_BIN_DIR:"*) ;;
+                *)
+                    export PATH="$FOUNDRY_BIN_DIR:$PATH"
+                    ;;
+            esac
+            cast_cmd="$FOUNDRY_BIN_DIR/cast"
+            return 0
+        fi
+
+        cast_cmd=""
+        return 1
+    }
+
+    if find_cast_binary; then
+        ensure_libusb >/dev/null 2>&1 || true
+        return 0
+    fi
+
+    if ! command -v curl &> /dev/null; then
+        echo -e "${RED}Error: curl is required to install Foundry (cast).${NC}"
+        echo -e "${YELLOW}Install curl manually and rerun this option.${NC}"
+        return 1
+    fi
+
+    echo -e "${YELLOW}cast not found. Installing Foundry toolchain (foundryup, forge, cast, anvil)...${NC}"
+    if ! curl -L https://foundry.paradigm.xyz | bash; then
+        echo -e "${RED}Failed to download the Foundry installer.${NC}"
+        return 1
+    fi
+
+    if [ ! -x "$FOUNDRY_BIN_DIR/foundryup" ]; then
+        echo -e "${RED}Foundry installer completed, but foundryup was not found at ${FOUNDRY_BIN_DIR}/foundryup.${NC}"
+        echo -e "${YELLOW}Please run 'source ~/.foundry/bin' or install Foundry manually.${NC}"
+        return 1
+    fi
+
+    if ! "$FOUNDRY_BIN_DIR/foundryup" -v &> /dev/null; then
+        echo -e "${YELLOW}Foundryup requires the environment variables it just configured.${NC}"
+        echo -e "${YELLOW}Please run:${NC}"
+        echo "  source \"$HOME/.zshenv\""
+        echo "  \"$FOUNDRY_BIN_DIR/foundryup\""
+        echo -e "${YELLOW}After that, rerun this option.${NC}"
+        return 1
+    fi
+
+    if ! "$FOUNDRY_BIN_DIR/foundryup" &> /dev/null; then
+        echo -e "${RED}foundryup failed to install the Foundry toolchain.${NC}"
+        return 1
+    fi
+
+    if ! ensure_libusb; then
+        echo -e "${RED}Failed to prepare libusb dependency required by cast.${NC}"
+        return 1
+    fi
+
+    if find_cast_binary; then
+        echo -e "${GREEN}Foundry cast installed successfully at $cast_cmd.${NC}"
+        echo -e "${YELLOW}Add this line to your shell profile to persist the PATH:${NC}"
+        echo "  export PATH=\"\$HOME/.foundry/bin:\$PATH\""
+        return 0
+    fi
+
+    echo -e "${RED}Failed to locate cast after installation.${NC}"
+    return 1
+}
+
+# Ensure Aztec CLI is installed with the required version
+ensure_aztec_cli() {
+    local REQUIRED_AZTEC_VERSION="2.1.2"
+    local AZTEC_BIN_DIR="$HOME/.aztec/bin"
+    local REQUIRED_BINARIES=("aztec" "aztec-up" "aztec-nargo" "aztec-wallet")
+    local aztec_cmd=""
+    local version_output=""
+    local installed_version=""
+
+    resolve_aztec_cmd() {
+        if command -v aztec &> /dev/null; then
+            aztec_cmd=$(command -v aztec)
+            return 0
+        fi
+
+        if [ -x "$AZTEC_BIN_DIR/aztec" ]; then
+            case ":$PATH:" in
+                *":$AZTEC_BIN_DIR:"*) ;;
+                *)
+                    export PATH="$AZTEC_BIN_DIR:$PATH"
+                    ;;
+            esac
+            aztec_cmd="$AZTEC_BIN_DIR/aztec"
+            return 0
+        fi
+
+        aztec_cmd=""
+        return 1
+    }
+
+    check_installed_version() {
+        installed_version=""
+
+        # First try to detect the version from the aztec symlink to avoid triggering the binary
+        if [ -L "$AZTEC_BIN_DIR/aztec" ]; then
+            local symlink_target
+            symlink_target=$(readlink "$AZTEC_BIN_DIR/aztec" 2>/dev/null || true)
+            if [ -n "$symlink_target" ]; then
+                # Normalize relative paths into something we can parse
+                case "$symlink_target" in
+                    v*|./v*|../v*)
+                        :
+                        ;;
+                    *)
+                        # If the target path does not contain the version, try to extract from the basename
+                        symlink_target=$(basename "$(dirname "$symlink_target")")
+                        ;;
+                esac
+
+                if [[ "$symlink_target" =~ v([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+                    installed_version="${BASH_REMATCH[1]}"
+                    if [ "$installed_version" = "$REQUIRED_AZTEC_VERSION" ]; then
+                        return 0
+                    fi
+                fi
+            fi
+        fi
+
+        if [ -z "$aztec_cmd" ]; then
+            installed_version=""
+            return 1
+        fi
+
+        version_output=$("$aztec_cmd" --version 2>/dev/null)
+        if [ -z "$version_output" ]; then
+            version_output=$("$aztec_cmd" version 2>/dev/null)
+        fi
+
+        installed_version=$(echo "$version_output" | grep -Eo '([0-9]+\.){2}[0-9]+' | head -n1)
+
+        if [ "$installed_version" = "$REQUIRED_AZTEC_VERSION" ]; then
+            return 0
+        fi
+
+        return 1
+    }
+
+    list_missing_binaries() {
+        local missing=()
+        for bin in "${REQUIRED_BINARIES[@]}"; do
+            if [ ! -x "$AZTEC_BIN_DIR/$bin" ]; then
+                missing+=("$bin")
+            fi
+        done
+        printf "%s" "${missing[*]}"
+    }
+
+    resolve_aztec_cmd
+    if check_installed_version; then
+        return 0
+    fi
+
+    if [ -n "$installed_version" ] && [ "$installed_version" != "$REQUIRED_AZTEC_VERSION" ]; then
+        echo -e "${YELLOW}Detected Aztec CLI version $installed_version. Required version is $REQUIRED_AZTEC_VERSION.${NC}"
+    else
+        echo -e "${YELLOW}Aztec CLI version $REQUIRED_AZTEC_VERSION not found.${NC}"
+    fi
+
+    if ! command -v curl &> /dev/null; then
+        echo -e "${RED}Error: curl is required to install the Aztec CLI.${NC}"
+        echo -e "${YELLOW}Please install curl and rerun this option.${NC}"
+        return 1
+    fi
+
+    echo -e "\n${BLUE}Installing Aztec toolchain...${NC}"
+    echo -e "${BLUE}Running:${NC} bash -i <(curl -s https://install.aztec.network)"
+    if ! AZTEC_NON_INTERACTIVE=1 bash -i <(curl -s https://install.aztec.network); then
+        echo -e "${RED}Failed to run the Aztec installer.${NC}"
+        echo -e "${YELLOW}You can install manually by running:${NC}"
+        echo "  bash -i <(curl -s https://install.aztec.network)"
+        echo "  ls ~/.aztec/bin"
+        echo "  echo 'export PATH=\"\$HOME/.aztec/bin:\$PATH\"' >> ~/.zshrc"
+        echo "  source ~/.zshrc"
+        echo "  aztec-up v${REQUIRED_AZTEC_VERSION}"
+        return 1
+    fi
+
+    if [ ! -d "$AZTEC_BIN_DIR" ]; then
+        echo -e "${RED}Installer completed but ${AZTEC_BIN_DIR} was not created.${NC}"
+        echo -e "${YELLOW}Please check the installer output and try again manually.${NC}"
+        return 1
+    fi
+
+    case ":$PATH:" in
+        *":$AZTEC_BIN_DIR:"*) ;;
+        *)
+            export PATH="$AZTEC_BIN_DIR:$PATH"
+            echo -e "${YELLOW}Added ${AZTEC_BIN_DIR} to the PATH for the current session.${NC}"
+            echo -e "${YELLOW}Add this line to your shell profile to persist:${NC}"
+            echo "  export PATH=\"\$HOME/.aztec/bin:\$PATH\""
+            ;;
+    esac
+
+    if [ -x "$AZTEC_BIN_DIR/aztec-up" ]; then
+        echo -e "\n${BLUE}Installing Aztec CLI version $REQUIRED_AZTEC_VERSION with aztec-up...${NC}"
+        if ! "$AZTEC_BIN_DIR/aztec-up" "v$REQUIRED_AZTEC_VERSION"; then
+            echo -e "${RED}aztec-up failed to install version $REQUIRED_AZTEC_VERSION.${NC}"
+            return 1
+        fi
+    else
+        echo -e "${RED}aztec-up binary was not found in ${AZTEC_BIN_DIR}.${NC}"
+        echo -e "${YELLOW}Please rerun the installer or install manually using the official instructions.${NC}"
+        return 1
+    fi
+
+    resolve_aztec_cmd
+    if ! check_installed_version; then
+        echo -e "${RED}Aztec CLI installation completed, but the expected version $REQUIRED_AZTEC_VERSION was not detected.${NC}"
+        echo -e "${YELLOW}Installer output:${NC} $version_output"
+        return 1
+    fi
+
+    local missing_bins
+    missing_bins=$(list_missing_binaries)
+    if [ -n "$missing_bins" ]; then
+        echo -e "${YELLOW}The following Aztec binaries were not found in ${AZTEC_BIN_DIR}:${NC} $missing_bins"
+        echo -e "${YELLOW}You may need to rerun the installer or install manually.${NC}"
+        return 1
+    fi
+
+    echo -e "${GREEN}Aztec CLI version $REQUIRED_AZTEC_VERSION is installed and available at $aztec_cmd.${NC}"
+    return 0
+}
+
 # Function to manage keystore and validator
 manage_keystore_validator() {
     while true; do
@@ -1821,10 +2167,9 @@ manage_keystore_validator() {
         echo -e "${YELLOW}    Manage Keystore & Validator${NC}"
         echo -e "${BLUE}=================================================${NC}"
         
-        # Check if aztec command is available
-        if ! command -v aztec &> /dev/null; then
-            echo -e "${RED}Error: aztec command not found!${NC}"
-            echo -e "${YELLOW}Please install Aztec CLI first.${NC}"
+        # Ensure Aztec CLI is available in the required version
+        if ! ensure_aztec_cli; then
+            echo -e "${RED}Unable to prepare the Aztec CLI.${NC}"
             read -p "Press Enter to continue..."
             return 1
         fi
@@ -2018,6 +2363,12 @@ add_l1_validator() {
     echo -e "${YELLOW}    Add L1 Validator${NC}"
     echo -e "${YELLOW}=================================================${NC}"
     
+    if ! ensure_aztec_cli; then
+        echo -e "${RED}Aztec CLI is required to add a validator.${NC}"
+        read -p "Press Enter to continue..."
+        return 1
+    fi
+    
     # Load environment variables from .env if it exists
     if [ -d "$AZTEC_DIR" ] && [ -f "$AZTEC_DIR/.env" ]; then
         echo -e "${YELLOW}Loading environment variables from .env...${NC}"
@@ -2119,12 +2470,13 @@ add_l1_validator() {
         return 1
     fi
     
-    # Extract attester ETH address and BLS secret key
-    local ETH_ATTESTER_ADDRESS=$(jq -r '.validators[0].attester.eth' "$keystore_file" 2>/dev/null)
+    # Extract attester keys
+    local ETH_ATTESTER_PRIV_KEY=$(jq -r '.validators[0].attester.eth' "$keystore_file" 2>/dev/null)
     local BLS_ATTESTER_PRIV_KEY=$(jq -r '.validators[0].attester.bls' "$keystore_file" 2>/dev/null)
+    local ETH_ATTESTER_ADDRESS=""
     
-    if [ -z "$ETH_ATTESTER_ADDRESS" ] || [ "$ETH_ATTESTER_ADDRESS" = "null" ]; then
-        echo -e "${RED}Failed to extract ETH attester address from keystore!${NC}"
+    if [ -z "$ETH_ATTESTER_PRIV_KEY" ] || [ "$ETH_ATTESTER_PRIV_KEY" = "null" ]; then
+        echo -e "${RED}Failed to extract ETH attester private key from keystore!${NC}"
         read -p "Press Enter to continue..."
         return 1
     fi
@@ -2134,12 +2486,29 @@ add_l1_validator() {
         read -p "Press Enter to continue..."
         return 1
     fi
+
+    # Derive attester address from the private key if possible
+    ETH_ATTESTER_ADDRESS=$(derive_eth_address_from_private_key "$ETH_ATTESTER_PRIV_KEY")
+
+    # Prompt user if automatic derivation failed
+    if ! [[ "$ETH_ATTESTER_ADDRESS" =~ ^0x[0-9a-fA-F]{40}$ ]]; then
+        echo -e "${YELLOW}Unable to derive attester Ethereum address automatically.${NC}"
+        echo -e "${YELLOW}Please enter the address corresponding to the attester private key.${NC}"
+        read -p "Enter attester ETH address (0x...): " ETH_ATTESTER_ADDRESS
+    fi
+
+    if ! [[ "$ETH_ATTESTER_ADDRESS" =~ ^0x[0-9a-fA-F]{40}$ ]]; then
+        echo -e "${RED}Invalid attester address provided.${NC}"
+        read -p "Press Enter to continue..."
+        return 1
+    fi
     
     # Default rollup address
     local ROLLUP_ADDRESS="0xebd99ff0ff6677205509ae73f93d0ca52ac85d67"
     
     echo -e "\n${BLUE}Validator Configuration:${NC}"
     echo -e "Attester ETH Address: ${YELLOW}$ETH_ATTESTER_ADDRESS${NC}"
+    echo -e "Attester ETH Private Key: ${YELLOW}${ETH_ATTESTER_PRIV_KEY:0:10}...${NC}"
     echo -e "BLS Secret Key: ${YELLOW}${BLS_ATTESTER_PRIV_KEY:0:20}...${NC}"
     echo -e "Rollup Address: ${YELLOW}$ROLLUP_ADDRESS${NC} (default)"
     
