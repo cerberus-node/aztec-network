@@ -2083,80 +2083,88 @@ ensure_aztec_cli() {
     }
 
     resolve_aztec_cmd
-    if check_installed_version; then
-        return 0
+    
+    # Check if Aztec CLI exists and is working
+    if [ -n "$aztec_cmd" ] && [ -x "$aztec_cmd" ]; then
+        # Try to get version
+        version_output=$("$aztec_cmd" --version 2>/dev/null || "$aztec_cmd" version 2>/dev/null || true)
+        installed_version=$(echo "$version_output" | grep -Eo '([0-9]+\.){2}[0-9]+' | head -n1 || true)
+        
+        if [ -n "$installed_version" ]; then
+            if [ "$installed_version" = "$REQUIRED_AZTEC_VERSION" ]; then
+                return 0
+            else
+                echo -e "${YELLOW}⚠️  Aztec CLI version $installed_version detected (required: $REQUIRED_AZTEC_VERSION).${NC}"
+                echo -e "${YELLOW}Continuing with current version. To upgrade, run: aztec-up $REQUIRED_AZTEC_VERSION${NC}"
+                return 0
+            fi
+        else
+            # CLI exists but can't get version - assume it's working
+            echo -e "${GREEN}✅ Aztec CLI found at $aztec_cmd${NC}"
+            return 0
+        fi
     fi
 
-    if [ -n "$installed_version" ] && [ "$installed_version" != "$REQUIRED_AZTEC_VERSION" ]; then
-        echo -e "${YELLOW}Detected Aztec CLI version $installed_version. Required version is $REQUIRED_AZTEC_VERSION.${NC}"
-    else
-        echo -e "${YELLOW}Aztec CLI version $REQUIRED_AZTEC_VERSION not found.${NC}"
-    fi
-
-    if ! command -v curl &> /dev/null; then
-        echo -e "${RED}Error: curl is required to install the Aztec CLI.${NC}"
-        echo -e "${YELLOW}Please install curl and rerun this option.${NC}"
-        return 1
-    fi
-
-    echo -e "\n${BLUE}Installing Aztec toolchain...${NC}"
-    echo -e "${BLUE}Running:${NC} bash -i <(curl -s https://install.aztec.network)"
-    if ! AZTEC_NON_INTERACTIVE=1 bash -i <(curl -s https://install.aztec.network); then
-        echo -e "${RED}Failed to run the Aztec installer.${NC}"
-        echo -e "${YELLOW}You can install manually by running:${NC}"
-        echo "  bash -i <(curl -s https://install.aztec.network)"
-        echo "  ls ~/.aztec/bin"
-        echo "  echo 'export PATH=\"\$HOME/.aztec/bin:\$PATH\"' >> ~/.zshrc"
-        echo "  source ~/.zshrc"
-        echo "  aztec-up v${REQUIRED_AZTEC_VERSION}"
-        return 1
-    fi
-
-    if [ ! -d "$AZTEC_BIN_DIR" ]; then
-        echo -e "${RED}Installer completed but ${AZTEC_BIN_DIR} was not created.${NC}"
-        echo -e "${YELLOW}Please check the installer output and try again manually.${NC}"
-        return 1
-    fi
-
-    case ":$PATH:" in
-        *":$AZTEC_BIN_DIR:"*) ;;
-        *)
-            export PATH="$AZTEC_BIN_DIR:$PATH"
-            echo -e "${YELLOW}Added ${AZTEC_BIN_DIR} to the PATH for the current session.${NC}"
-            echo -e "${YELLOW}Add this line to your shell profile to persist:${NC}"
-            echo "  export PATH=\"\$HOME/.aztec/bin:\$PATH\""
-            ;;
-    esac
-
-    if [ -x "$AZTEC_BIN_DIR/aztec-up" ]; then
-        echo -e "\n${BLUE}Installing Aztec CLI version $REQUIRED_AZTEC_VERSION with aztec-up...${NC}"
-        if ! "$AZTEC_BIN_DIR/aztec-up" "v$REQUIRED_AZTEC_VERSION"; then
-            echo -e "${RED}aztec-up failed to install version $REQUIRED_AZTEC_VERSION.${NC}"
+    # Only install if CLI is completely missing
+    if [ ! -d "$AZTEC_BIN_DIR" ] || [ ! -x "$AZTEC_BIN_DIR/aztec" ]; then
+        echo -e "${YELLOW}Aztec CLI not found. Installing...${NC}"
+        
+        if ! command -v curl &> /dev/null; then
+            echo -e "${RED}Error: curl is required to install the Aztec CLI.${NC}"
+            echo -e "${YELLOW}Please install curl and rerun this option.${NC}"
             return 1
         fi
-    else
-        echo -e "${RED}aztec-up binary was not found in ${AZTEC_BIN_DIR}.${NC}"
-        echo -e "${YELLOW}Please rerun the installer or install manually using the official instructions.${NC}"
-        return 1
+
+        echo -e "\n${BLUE}Installing Aztec toolchain...${NC}"
+        echo -e "${BLUE}Running:${NC} bash -i <(curl -s https://install.aztec.network)"
+        if ! AZTEC_NON_INTERACTIVE=1 bash -i <(curl -s https://install.aztec.network); then
+            echo -e "${RED}Failed to run the Aztec installer.${NC}"
+            echo -e "${YELLOW}You can install manually by running:${NC}"
+            echo "  bash -i <(curl -s https://install.aztec.network)"
+            echo "  ls ~/.aztec/bin"
+            echo "  echo 'export PATH=\"\$HOME/.aztec/bin:\$PATH\"' >> ~/.zshrc"
+            echo "  source ~/.zshrc"
+            echo "  aztec-up ${REQUIRED_AZTEC_VERSION}"
+            return 1
+        fi
+
+        if [ ! -d "$AZTEC_BIN_DIR" ]; then
+            echo -e "${RED}Installer completed but ${AZTEC_BIN_DIR} was not created.${NC}"
+            echo -e "${YELLOW}Please check the installer output and try again manually.${NC}"
+            return 1
+        fi
+
+        case ":$PATH:" in
+            *":$AZTEC_BIN_DIR:"*) ;;
+            *)
+                export PATH="$AZTEC_BIN_DIR:$PATH"
+                echo -e "${YELLOW}Added ${AZTEC_BIN_DIR} to the PATH for the current session.${NC}"
+                echo -e "${YELLOW}Add this line to your shell profile to persist:${NC}"
+                echo "  export PATH=\"\$HOME/.aztec/bin:\$PATH\""
+                ;;
+        esac
+
+        # Try to install specific version if aztec-up is available
+        if [ -x "$AZTEC_BIN_DIR/aztec-up" ]; then
+            echo -e "\n${BLUE}Installing Aztec CLI version $REQUIRED_AZTEC_VERSION with aztec-up...${NC}"
+            "$AZTEC_BIN_DIR/aztec-up" "$REQUIRED_AZTEC_VERSION" || true
+        fi
+
+        resolve_aztec_cmd
+        if [ -n "$aztec_cmd" ] && [ -x "$aztec_cmd" ]; then
+            echo -e "${GREEN}✅ Aztec CLI installed and available at $aztec_cmd${NC}"
+            return 0
+        else
+            echo -e "${YELLOW}⚠️  Aztec CLI installation completed, but binary not found.${NC}"
+            echo -e "${YELLOW}You may need to add ~/.aztec/bin to your PATH.${NC}"
+            return 1
+        fi
     fi
 
-    resolve_aztec_cmd
-    if ! check_installed_version; then
-        echo -e "${RED}Aztec CLI installation completed, but the expected version $REQUIRED_AZTEC_VERSION was not detected.${NC}"
-        echo -e "${YELLOW}Installer output:${NC} $version_output"
-        return 1
-    fi
-
-    local missing_bins
-    missing_bins=$(list_missing_binaries)
-    if [ -n "$missing_bins" ]; then
-        echo -e "${YELLOW}The following Aztec binaries were not found in ${AZTEC_BIN_DIR}:${NC} $missing_bins"
-        echo -e "${YELLOW}You may need to rerun the installer or install manually.${NC}"
-        return 1
-    fi
-
-    echo -e "${GREEN}Aztec CLI version $REQUIRED_AZTEC_VERSION is installed and available at $aztec_cmd.${NC}"
-    return 0
+    # Fallback: CLI directory exists but binary not found
+    echo -e "${YELLOW}⚠️  Aztec CLI directory exists but binary not found.${NC}"
+    echo -e "${YELLOW}Please check your installation or run: aztec-up${NC}"
+    return 1
 }
 
 # Function to manage keystore and validator
